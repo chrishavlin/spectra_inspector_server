@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.26", "uv-dynamic-versioning"]
+requires = ["hatchling>=1.26", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 
@@ -28,7 +28,14 @@ classifiers = [
   "Typing :: Typed",
 ]
 dynamic = ["version"]
-dependencies = []
+dependencies = [
+    "exspy>=0.3.2",
+    "fastapi[standard]>=0.129.0",
+    "matplotlib>=3.10.8",
+    "numpy>=2.2.6",
+    "pandas>=2.3.3",
+    "rosettasciio[all]>=0.12.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/chrishavlin/spectra_inspector_server"
