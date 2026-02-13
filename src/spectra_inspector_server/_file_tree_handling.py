@@ -2,7 +2,8 @@ import os
 from pathlib import Path
 
 from spectra_inspector_server._logging import spectraLogger
-from spectra_inspector_server.model import EDAX_file_set
+from spectra_inspector_server.model import EDAX_file_set, EDAX_raw_ds
+from spectra_inspector_server.processor.file_loaders import load_edax_spd
 
 _ENV_DATA_ROOT = "SPECTRAINSPECTORDATAROOT"
 
@@ -44,3 +45,7 @@ class PathHandler:
             fullfiles[ext] = sdir / f"{sample_name}.{ext}"
 
         return EDAX_file_set(**fullfiles)
+
+    def load_edax(self, sample_name: str) -> EDAX_raw_ds:
+        files = self.get_sample_edax_file_names(sample_name)
+        return load_edax_spd(files)
