@@ -11,6 +11,8 @@
 
 [![Coverage][coverage-badge]][coverage-link]
 
+## developer notes
+
 manual type checking:
 
 ```
