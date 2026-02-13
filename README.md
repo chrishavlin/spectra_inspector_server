@@ -11,6 +11,13 @@
 
 [![Coverage][coverage-badge]][coverage-link]
 
+manual type checking:
+
+```
+uv sync
+mypy --follow-untyped-imports .
+```
+
 <!-- SPHINX-START -->
 
 <!-- prettier-ignore-start -->
