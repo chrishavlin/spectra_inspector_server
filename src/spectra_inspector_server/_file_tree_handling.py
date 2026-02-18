@@ -2,17 +2,20 @@ import os
 from pathlib import Path
 
 from spectra_inspector_server._logging import spectraLogger
+from spectra_inspector_server._testing import _on_disc_mock
 from spectra_inspector_server.model import EDAX_file_set, EDAX_raw_ds
 from spectra_inspector_server.processor.file_loaders import load_edax_spd
 
 _ENV_DATA_ROOT = "SPECTRAINSPECTORDATAROOT"
 
 
-class PathHandler:
+class EDAXPathHandler:
     data_root: Path
     edax_dir_name: str = "Proprietary EDAX Files"
 
-    def __init__(self, data_root: str | Path | None = None):
+    def __init__(
+        self, data_root: str | Path | None = None, require_valid_path: bool = True
+    ):
 
         valid_data_path: Path | None = None
         if data_root is None:
@@ -27,7 +30,7 @@ class PathHandler:
 
         self.data_root = Path(valid_data_path)
 
-        if not Path.exists(self.data_root):
+        if not Path.exists(self.data_root) and require_valid_path:
             msg = f"data_root path does not exist: {self.data_root}"
             raise FileNotFoundError(msg)
 
@@ -47,5 +50,8 @@ class PathHandler:
         return EDAX_file_set(**fullfiles)
 
     def load_edax(self, sample_name: str) -> EDAX_raw_ds:
+        if sample_name in _on_disc_mock.filenames:
+            # a short-circuit for testing
+            return _on_disc_mock.load(sample_name)
         files = self.get_sample_edax_file_names(sample_name)
         return load_edax_spd(files)

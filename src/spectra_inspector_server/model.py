@@ -31,6 +31,7 @@ class EDAX_raw_ds:
     axes: list[EDAX_axis]
     metadata: dict[str, Any]
     original_metadata: dict[str, Any]
+    axes_by_index: dict[int, EDAX_axis]
 
     def __init__(self, raw_ds: dict[str, Any]):
 
@@ -41,3 +42,8 @@ class EDAX_raw_ds:
         self.axes = axes
         self.metadata = raw_ds["metadata"]
         self.original_metadata = raw_ds["original_metadata"]
+
+        axes_by_index: dict[int, EDAX_axis] = {}
+        for ax in axes:
+            axes_by_index[ax.index_in_array] = ax
+        self.axes_by_index = axes_by_index
