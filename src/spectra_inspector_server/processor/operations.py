@@ -57,7 +57,7 @@ class OperationEDAXStateHandler:
             channel_slice,
         ].copy()
 
-    def get_multi_channel_sum(
+    def get_multi_channel_intensity_image(
         self,
         sample_name: str,
         channel_range: tuple[int, int],
@@ -79,25 +79,36 @@ class OperationEDAXStateHandler:
             [indx[1] - indx[0] for indx in index_ranges[:-1]]
         )
 
+        index_offsets = [indx[0] for indx in index_ranges[:-1]]
         im_output = np.zeros(final_shape)
+
         assert im_output.ndim == 2
 
         i_chunk_0 = orig_ranges[chunking_index][0]
         while i_chunk_0 < orig_ranges[chunking_index][1]:
             i_chunk_1 = i_chunk_0 + chunksize
-
             i_chunk_1 = min(i_chunk_1, orig_ranges[chunking_index][1])
 
             index_ranges[chunking_index] = (i_chunk_0, i_chunk_1)
 
             im = self.get_image(
                 sample_name,
-                index_ranges[-1],
+                index_ranges[2],
                 index0_range=index_ranges[0],
                 index1_range=index_ranges[1],
             )
 
-            im_output = im_output + im.sum(axis=-1)
+            im_subset = im.sum(axis=-1)
+
+            # find the indices to put it in
+            slcs = [
+                slice(
+                    index_ranges[idim][0] - index_offsets[idim],
+                    index_ranges[idim][1] - index_offsets[idim],
+                )
+                for idim in range(2)
+            ]
+            im_output[slcs[0], slcs[1]] = im_output[slcs[0], slcs[1]] + im_subset
 
             i_chunk_0 += chunksize
 
