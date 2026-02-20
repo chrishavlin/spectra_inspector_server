@@ -1,7 +1,7 @@
 import numpy as np
 
 from spectra_inspector_server._file_tree_handling import EDAXPathHandler
-from spectra_inspector_server.model import EDAX_axis
+from spectra_inspector_server.model import EDAX_axis, Spectrum1d
 
 
 class OperationEDAXStateHandler:
@@ -113,3 +113,55 @@ class OperationEDAXStateHandler:
             i_chunk_0 += chunksize
 
         return im_output
+
+    def get_spectrum(
+        self,
+        sample_name: str,
+        channel_range: tuple[int, int] | None = None,
+        index0_range: tuple[int, int] | None = None,
+        index1_range: tuple[int, int] | None = None,
+        chunking_index: int = 0,
+        chunksize: int = 32,
+    ) -> Spectrum1d:
+
+        input_index_ranges = [index0_range, index1_range, channel_range]
+        valid_index_ranges = self._validate_index_ranges(
+            sample_name, input_index_ranges
+        )
+        index_ranges = [
+            valid_index_ranges[0],
+            valid_index_ranges[1],
+            valid_index_ranges[2],
+        ]
+
+        orig_ranges = index_ranges.copy()
+
+        final_shape = (index_ranges[2][1] - index_ranges[2][0],)
+
+        im_output = np.zeros(final_shape)
+
+        assert im_output.ndim == 1
+
+        i_chunk_0 = orig_ranges[chunking_index][0]
+        while i_chunk_0 < orig_ranges[chunking_index][1]:
+            i_chunk_1 = i_chunk_0 + chunksize
+            i_chunk_1 = min(i_chunk_1, orig_ranges[chunking_index][1])
+
+            index_ranges[chunking_index] = (i_chunk_0, i_chunk_1)
+
+            im = self.get_image(
+                sample_name,
+                index_ranges[2],
+                index0_range=index_ranges[0],
+                index1_range=index_ranges[1],
+            )
+
+            im_reduced = im.sum(axis=0).sum(axis=0)
+            assert im_reduced.size == im_output.size
+            im_output = im_output + im_reduced
+
+            i_chunk_0 += chunksize
+
+        energy_channel_axis = np.arange(index_ranges[2][0], index_ranges[2][1])
+
+        return Spectrum1d(energy=energy_channel_axis, intensity=im_output)

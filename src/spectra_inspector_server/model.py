@@ -26,6 +26,12 @@ class EDAX_axis:
     navigate: bool
 
 
+@dataclass
+class Spectrum1d:
+    energy: npt.NDArray
+    intensity: npt.NDArray
+
+
 class EDAX_raw_ds:
     data: npt.NDArray  # type: ignore[type-arg]
     axes: list[EDAX_axis]
