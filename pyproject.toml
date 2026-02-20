@@ -45,6 +45,9 @@ Discussions = "https://github.com/chrishavlin/spectra_inspector_server/discussio
 Changelog = "https://github.com/chrishavlin/spectra_inspector_server/releases"
 
 
+[project.optional-dependencies]
+examples = ["matplotlib", "jupyterlab"]
+
 [dependency-groups]
 test = ["pytest >=9", "pytest-cov >=7"]
 dev = [{ include-group = "test" }]
