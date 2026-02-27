@@ -214,3 +214,24 @@ def createEDAXMock(im_shape: tuple[int, int, int] | None = None):
     fake_raw_ds["original_metadata"] = orig_metadata
 
     return EDAX_raw_ds(fake_raw_ds)
+
+
+class onDiscMock:
+    filenames = (
+        "faked-dataset-C12",
+        "faked-dataset-2",
+    )
+
+    def __init__(self) -> None:
+        pass
+
+    def load(self, file):
+        if file in self.filenames:
+            return createEDAXMock()
+        msg = f"File {file} is not a fake file"
+        raise ValueError(msg)
+
+
+_on_disc_mock = onDiscMock()
+
+__all__ = ["_on_disc_mock", "createEDAXMock"]
