@@ -67,3 +67,6 @@ class EDAXPathHandler:
             # fallback to guessing
             files = self.get_sample_edax_file_names(sample_name)
         return load_edax_spd(files)
+
+
+__all__ = ["EDAXPathHandler"]
