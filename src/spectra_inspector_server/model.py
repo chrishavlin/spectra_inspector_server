@@ -28,10 +28,21 @@ class EDAX_axis:
     navigate: bool
 
 
+class Spectrum1dDict:
+    energy: list[float]
+    intensity: list[float]
+
+
 @dataclass
 class Spectrum1d:
     energy: npt.NDArray
     intensity: npt.NDArray
+
+    def tolist(self):
+        return [self.energy.tolist(), self.intensity.tolist()]
+
+    def todict(self) -> Spectrum1dDict:
+        return {"energy": self.energy.tolist(), "intensity": self.intensity.tolist()}
 
 
 class GeneralMetadata(BaseModel):
