@@ -28,6 +28,7 @@ class EDAX_axis:
     navigate: bool
 
 
+@dataclass
 class Spectrum1dDict:
     energy: list[float]
     intensity: list[float]
