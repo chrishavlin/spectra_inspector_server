@@ -1,17 +1,33 @@
 import numpy as np
 
 from spectra_inspector_server._file_tree_handling import EDAXPathHandler
-from spectra_inspector_server.model import EDAX_axis, Spectrum1d
+from spectra_inspector_server.model import EDAX_axis, MetadataModel, Spectrum1d
 
 
 class OperationEDAXStateHandler:
-    def __init__(self, ph: EDAXPathHandler) -> None:
+    def __init__(self, ph: EDAXPathHandler, allow_mock_files: bool = False) -> None:
         self.ph = ph
+        self._allow_mock_files = allow_mock_files
+
+    def _require_sample(self, sample_name: str):
+
+        if sample_name in self.ph.database.available_maps:
+            return
+
+        if self._allow_mock_files:
+            from spectra_inspector_server._testing import _on_disc_mock  # noqa: PLC0415
+
+            if sample_name in _on_disc_mock.filenames:
+                return
+
+        msg = f"{sample_name} not in available datasets"
+        raise KeyError(msg)
 
     def _validate_index_ranges(
         self, sample_name: str, input_index_ranges: list[tuple[int, int] | None]
     ):
 
+        self._require_sample(sample_name)
         edax_ds = self.ph.load_edax(sample_name)
 
         valid_index_ranges: list[tuple[int, int]] = []
@@ -26,6 +42,7 @@ class OperationEDAXStateHandler:
         return valid_index_ranges
 
     def get_sample_axes(self, sample_name: str) -> list[EDAX_axis]:
+        self._require_sample(sample_name)
         edax_ds = self.ph.load_edax(sample_name)
         return edax_ds.axes.copy()
 
@@ -37,6 +54,7 @@ class OperationEDAXStateHandler:
         index1_range: tuple[int, int] | None = None,
     ):
 
+        self._require_sample(sample_name)
         input_index_ranges = [index0_range, index1_range]
         valid_index_ranges = self._validate_index_ranges(
             sample_name, input_index_ranges
@@ -67,6 +85,7 @@ class OperationEDAXStateHandler:
         chunksize: int = 32,
     ):
 
+        self._require_sample(sample_name)
         input_index_ranges = [index0_range, index1_range]
         valid_index_ranges = self._validate_index_ranges(
             sample_name, input_index_ranges
@@ -124,6 +143,7 @@ class OperationEDAXStateHandler:
         chunksize: int = 32,
     ) -> Spectrum1d:
 
+        self._require_sample(sample_name)
         input_index_ranges = [index0_range, index1_range, channel_range]
         valid_index_ranges = self._validate_index_ranges(
             sample_name, input_index_ranges
@@ -165,3 +185,8 @@ class OperationEDAXStateHandler:
         energy_channel_axis = np.arange(index_ranges[2][0], index_ranges[2][1])
 
         return Spectrum1d(energy=energy_channel_axis, intensity=im_output)
+
+    def get_refined_metadata(self, sample_name: str) -> MetadataModel:
+        self._require_sample(sample_name)
+        fl = self.ph.load_edax(sample_name)
+        return fl.refined_metadata

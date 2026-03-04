@@ -1,3 +1,4 @@
+import os
 from collections import OrderedDict
 
 import numpy as np
@@ -232,6 +233,10 @@ class onDiscMock:
         raise ValueError(msg)
 
 
+def pytest_running() -> bool:
+    return os.environ.get("PYTEST_VERSION") is not None
+
+
 _on_disc_mock = onDiscMock()
 
-__all__ = ["_on_disc_mock", "createEDAXMock"]
+__all__ = ["_on_disc_mock", "createEDAXMock", "pytest_running"]
