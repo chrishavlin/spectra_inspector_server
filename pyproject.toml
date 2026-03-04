@@ -50,7 +50,7 @@ Changelog = "https://github.com/chrishavlin/spectra_inspector_server/releases"
 examples = ["matplotlib", "jupyterlab"]
 
 [dependency-groups]
-test = ["pytest >=9", "pytest-cov >=7"]
+test = ["httpx>=0.28.1", "pytest >=9", "pytest-cov >=7"]
 dev = [{ include-group = "test" }]
 docs = [
   "sphinx>=7.0",

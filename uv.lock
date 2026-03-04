@@ -4193,6 +4193,7 @@ examples = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "httpx" },
     { name = "pytest" },
     { name = "pytest-cov" },
 ]
@@ -4209,6 +4210,7 @@ docs = [
     { name = "sphinx-copybutton" },
 ]
 test = [
+    { name = "httpx" },
     { name = "pytest" },
     { name = "pytest-cov" },
 ]
@@ -4235,6 +4237,7 @@ provides-extras = ["examples"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "pytest", specifier = ">=9" },
     { name = "pytest-cov", specifier = ">=7" },
 ]
@@ -4246,6 +4249,7 @@ docs = [
     { name = "sphinx-copybutton" },
 ]
 test = [
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "pytest", specifier = ">=9" },
     { name = "pytest-cov", specifier = ">=7" },
 ]
