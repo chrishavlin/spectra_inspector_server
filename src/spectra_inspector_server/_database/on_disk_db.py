@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class OnDiskDatabase:
-    available_maps: dict[str:EDAX_file_set]
+    available_maps: dict[str, EDAX_file_set]
 
     def __init__(self, ph: "EDAXPathHandler", init_db: bool = True):
         self.available_maps = {}
