@@ -43,7 +43,9 @@ class Spectrum1d:
         return [self.energy.tolist(), self.intensity.tolist()]
 
     def todict(self) -> Spectrum1dDict:
-        return {"energy": self.energy.tolist(), "intensity": self.intensity.tolist()}
+        return Spectrum1dDict(
+            energy=self.energy.tolist(), intensity=self.intensity.tolist()
+        )
 
 
 class GeneralMetadata(BaseModel):

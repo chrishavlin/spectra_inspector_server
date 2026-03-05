@@ -51,7 +51,7 @@ examples = ["matplotlib", "jupyterlab"]
 
 [dependency-groups]
 test = ["httpx>=0.28.1", "pytest >=9", "pytest-cov >=7"]
-dev = [{ include-group = "test" }]
+dev = [{ include-group = "test" }, "pre-commit"]
 docs = [
   "sphinx>=7.0",
   "myst_parser>=0.13",
