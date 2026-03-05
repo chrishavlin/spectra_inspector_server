@@ -6,7 +6,7 @@ import numpy as np
 from spectra_inspector_server.model import EDAX_raw_ds
 
 
-def createEDAXMock(im_shape: tuple[int, int, int] | None = None):
+def createEDAXMock(im_shape: tuple[int, int, int] | None = None) -> EDAX_raw_ds:
 
     if im_shape is None:
         im_shape = (16, 16, 10)
@@ -54,7 +54,8 @@ def createEDAXMock(im_shape: tuple[int, int, int] | None = None):
     fake_raw_ds["axes"] = axes
 
     rng = np.random.default_rng()
-    fake_raw_ds["data"] = rng.random(im_shape)
+    fkdata = rng.random(im_shape) * 10
+    fake_raw_ds["data"] = fkdata.astype(np.int64)  # type:ignore[assignment]
     fake_raw_ds["metadata"] = {
         "General": {"original_filename": "C-12.spd", "title": "EDS Spectrum Image"},
         "Signal": {"signal_type": "EDS_SEM"},
@@ -73,7 +74,7 @@ def createEDAXMock(im_shape: tuple[int, int, int] | None = None):
             }
         },
         "Sample": {"elements": ["Al", "Ca", "Fe", "K", "Mg", "Na", "O", "Si"]},
-    }
+    }  # type:ignore[assignment]
 
     # note: the original metadata here is mostly copied from the C-12
     # data. The "filler" entries were long byte-strings stored in np.void arrays,
@@ -145,7 +146,7 @@ def createEDAXMock(im_shape: tuple[int, int, int] | None = None):
             "reserved4": np.array([0.0, 0.0], dtype=np.float32),
         }
     )
-    orig_metadata["ipr_header"] = ipr_h
+    orig_metadata["ipr_header"] = ipr_h  # type:ignore[assignment]
     spc_h = OrderedDict(
         {
             "filler1": np.void(b"bytesfiller"),
@@ -211,8 +212,8 @@ def createEDAXMock(im_shape: tuple[int, int, int] | None = None):
             "filler7": np.void(b"bytesfiller"),
         }
     )
-    orig_metadata["spc_header"] = spc_h
-    fake_raw_ds["original_metadata"] = orig_metadata
+    orig_metadata["spc_header"] = spc_h  # type:ignore[assignment]
+    fake_raw_ds["original_metadata"] = orig_metadata  # type:ignore[assignment]
 
     return EDAX_raw_ds(fake_raw_ds)
 
@@ -226,7 +227,7 @@ class onDiscMock:
     def __init__(self) -> None:
         pass
 
-    def load(self, file):
+    def load(self, file: str) -> EDAX_raw_ds:
         if file in self.filenames:
             return createEDAXMock()
         msg = f"File {file} is not a fake file"

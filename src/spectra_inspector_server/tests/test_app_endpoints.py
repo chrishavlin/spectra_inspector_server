@@ -15,7 +15,7 @@ _endpoints_keys = [
 
 
 @pytest.mark.parametrize(("endpoint", "response_keys"), _endpoints_keys)
-def test_endpoint_responses(endpoint: str, response_keys: list[str] | None):
+def test_endpoint_responses(endpoint: str, response_keys: list[str] | None) -> None:
 
     response = client.get(f"/{endpoint}")
     assert response.status_code == 200
@@ -25,7 +25,7 @@ def test_endpoint_responses(endpoint: str, response_keys: list[str] | None):
         all(ky in jdict for ky in response_keys)
 
 
-def test_image_metadata():
+def test_image_metadata() -> None:
     response = client.get(
         "/image-metadata", params={"sample_name": _on_disc_mock.filenames[0]}
     )
@@ -34,7 +34,7 @@ def test_image_metadata():
     assert mm.General.title == "EDS Spectrum Image"
 
 
-def test_image_spectrum():
+def test_image_spectrum() -> None:
 
     response = client.get(
         "/image-spectrum", params={"sample_name": _on_disc_mock.filenames[0]}

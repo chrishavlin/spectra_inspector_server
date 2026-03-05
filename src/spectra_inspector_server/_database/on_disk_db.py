@@ -16,11 +16,11 @@ class OnDiskDatabase:
         if init_db:
             self.inspect(ph)
 
-    def inspect(self, ph):
+    def inspect(self, ph: "EDAXPathHandler") -> None:
         spectraLogger.info(f"Inspecting {ph.data_root}")
         _recursive_inspection(ph.data_root, self)
 
-    def add_fileset(self, basename: str, files: dict[str, Path]):
+    def add_fileset(self, basename: str, files: dict[str, Path]) -> None:
         if basename in self.available_maps:
             msg = f"Duplicate map name! {basename} exists already."
             raise KeyError(msg)
@@ -44,14 +44,14 @@ def _get_expected_files(spd_file: Path) -> dict[str, Path]:
     return file_set_args
 
 
-def _has_all_files(spd_file: Path):
+def _has_all_files(spd_file: Path) -> bool:
     for expected_file in _get_expected_files(spd_file).values():
         if not expected_file.is_file():
             return False
     return True
 
 
-def _recursive_inspection(dirname: Path, db: OnDiskDatabase):
+def _recursive_inspection(dirname: Path, db: OnDiskDatabase) -> None:
     if dirname.is_dir():
         for fh in dirname.iterdir():
             if fh.is_dir():
