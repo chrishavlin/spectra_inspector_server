@@ -5,7 +5,7 @@ from spectra_inspector_server.model import EDAX_raw_ds
 
 
 @pytest.mark.parametrize("im_shape", [None, (8, 16, 5)])
-def test_createEDAXMock(im_shape):
+def test_createEDAXMock(im_shape: None | tuple[int, int, int]) -> None:
     ds = createEDAXMock(im_shape=im_shape)
     assert isinstance(ds, EDAX_raw_ds)
 

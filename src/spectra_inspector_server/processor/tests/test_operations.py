@@ -1,20 +1,21 @@
 import numpy as np
 import pytest
 
+from spectra_inspector_server._file_tree_handling import EDAXPathHandler
 from spectra_inspector_server._testing import _on_disc_mock
 from spectra_inspector_server.processor.operations import (
     OperationEDAXStateHandler,
 )
 
 
-def test_get_sample_axes_info(edax_path_handler):
+def test_get_sample_axes_info(edax_path_handler: EDAXPathHandler) -> None:
     fake_filename = _on_disc_mock.filenames[0]
     ops = OperationEDAXStateHandler(edax_path_handler, allow_mock_files=True)
     axis_info = ops.get_sample_axes(fake_filename)
     assert len(axis_info) == 3
 
 
-def test_get_single_channel_image(edax_path_handler):
+def test_get_single_channel_image(edax_path_handler: EDAXPathHandler) -> None:
     fake_filename = _on_disc_mock.filenames[0]
     ops = OperationEDAXStateHandler(edax_path_handler, allow_mock_files=True)
     axis_info = ops.get_sample_axes(fake_filename)
@@ -45,7 +46,7 @@ def test_get_single_channel_image(edax_path_handler):
     assert im.shape == (2, 3)
 
 
-def test_get_multi_channel_image(edax_path_handler):
+def test_get_multi_channel_image(edax_path_handler: EDAXPathHandler) -> None:
 
     fake_filename = _on_disc_mock.filenames[0]
     ops = OperationEDAXStateHandler(edax_path_handler, allow_mock_files=True)
@@ -63,10 +64,10 @@ def test_get_multi_channel_image(edax_path_handler):
     assert im.shape == expected_shp
 
     with pytest.raises(TypeError, match="unexpected type for channel_index"):
-        _ = ops.get_image(fake_filename, [0, 4])
+        _ = ops.get_image(fake_filename, [0, 4])  # type:ignore[arg-type]
 
 
-def test_get_refined_metadata(edax_path_handler):
+def test_get_refined_metadata(edax_path_handler: EDAXPathHandler) -> None:
     fake_filename = _on_disc_mock.filenames[0]
     ops = OperationEDAXStateHandler(edax_path_handler, allow_mock_files=True)
     md = ops.get_refined_metadata(fake_filename)

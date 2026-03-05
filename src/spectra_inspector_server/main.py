@@ -5,13 +5,19 @@ from fastapi import Depends, FastAPI, HTTPException
 from spectra_inspector_server._file_tree_handling import EDAXPathHandler
 from spectra_inspector_server._testing import pytest_running
 from spectra_inspector_server.dependencies import get_database_session, get_settings
+from spectra_inspector_server.model import (
+    AvailableDatasets,
+    Info,
+    MetadataModel,
+    Spectrum1dDict,
+)
 from spectra_inspector_server.processor.operations import OperationEDAXStateHandler
 from spectra_inspector_server.settings import Settings
 
 app = FastAPI()
 
 
-def _valid_sample_name(sample_name: str, ph: EDAXPathHandler):
+def _valid_sample_name(sample_name: str, ph: EDAXPathHandler) -> bool:
     if sample_name in ph.database.available_maps:
         return True
 
@@ -24,23 +30,23 @@ def _valid_sample_name(sample_name: str, ph: EDAXPathHandler):
 
 
 @app.get("/info")
-async def info(settings: Annotated[Settings, Depends(get_settings)]):
-    return {
-        "app_name": settings.app_name,
-        "spectra_inspector_data_root": settings.spectra_inspector_data_root,
-    }
+async def info(settings: Annotated[Settings, Depends(get_settings)]) -> Info:
+    return Info(
+        app_name=settings.app_name,
+        spectra_inspector_data_root=settings.spectra_inspector_data_root,
+    )
 
 
 @app.get("/available-datasets")
-async def avaialbe_datasets() -> dict[str, list[str]]:
+async def avaialbe_datasets() -> AvailableDatasets:
 
     ph = get_database_session()
     filekeys = [str(nm) for nm in ph.database.available_maps]
-    return {"available_files": filekeys}
+    return AvailableDatasets(available_files=filekeys)
 
 
 @app.get("/image-metadata")
-async def image_metadata(sample_name: str):
+async def image_metadata(sample_name: str) -> MetadataModel:
 
     ph = get_database_session()
     if not _valid_sample_name(sample_name, ph):
@@ -54,7 +60,7 @@ async def image_metadata(sample_name: str):
 @app.get("/image-spectrum")
 async def image_spectrum(
     sample_name: str,
-):
+) -> Spectrum1dDict:
 
     ph = get_database_session()
     if not _valid_sample_name(sample_name, ph):

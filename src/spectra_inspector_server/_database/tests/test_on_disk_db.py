@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from spectra_inspector_server.model import EDAX_file_set
 
 
-def test_on_disk_db_init(tmp_path):
+def test_on_disk_db_init(tmp_path: Path) -> None:
 
     # build a test db on disk: this could be a useful fixture
     db_root = tmp_path / "top_db"
@@ -38,8 +38,8 @@ def test_on_disk_db_init(tmp_path):
     new_samp = "lets make another sample"
     sample_names.append(new_samp)
     spd_file = db_root / "C-1" / annoying_directory / (new_samp + ".spd")
-    sample_files: dict[str, Path] = _get_expected_files(spd_file)
-    for sample_file in sample_files.values():
+    observed_sample_files: dict[str, Path] = _get_expected_files(spd_file)
+    for sample_file in observed_sample_files.values():
         with open(str(sample_file), "w") as fh:
             fh.write(f"writing to {sample_file}")
 
@@ -48,9 +48,9 @@ def test_on_disk_db_init(tmp_path):
     maps: dict[str, EDAX_file_set] = ph.database.available_maps
     assert set(maps.keys()) == set(sample_names)
 
-    for sample in maps.values():
-        assert sample.bmp.exists()
-        assert sample.spd.exists()
-        assert sample.spc.exists()
-        assert sample.ipr.exists()
-        assert sample.xml.exists()
+    for sample_set in maps.values():
+        assert sample_set.bmp.exists()
+        assert sample_set.spd.exists()
+        assert sample_set.spc.exists()
+        assert sample_set.ipr.exists()
+        assert sample_set.xml.exists()

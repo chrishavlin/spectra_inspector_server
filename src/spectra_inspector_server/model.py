@@ -36,10 +36,10 @@ class Spectrum1dDict:
 
 @dataclass
 class Spectrum1d:
-    energy: npt.NDArray
-    intensity: npt.NDArray
+    energy: npt.NDArray[np.int64]
+    intensity: npt.NDArray[np.int64]
 
-    def tolist(self):
+    def tolist(self) -> list[list[float]]:
         return [self.energy.tolist(), self.intensity.tolist()]
 
     def todict(self) -> Spectrum1dDict:
@@ -104,7 +104,7 @@ class EDAX_raw_ds:
 
         axes = [EDAX_axis(**ax_dict) for ax_dict in raw_ds["axes"]]
 
-        valid_data: np.ndarray = raw_ds["data"]  # type: ignore[type-arg]
+        valid_data: npt.NDArray = raw_ds["data"]  # type: ignore[type-arg]
         self.data = valid_data
         self.axes = axes
         self.metadata = raw_ds["metadata"]
@@ -154,3 +154,14 @@ class EDAX_raw_ds:
             Acquisition_instrument=ai,
             Sample=samp,
         )
+
+
+@dataclass
+class Info:
+    app_name: str
+    spectra_inspector_data_root: str
+
+
+@dataclass
+class AvailableDatasets:
+    available_files: list[str]

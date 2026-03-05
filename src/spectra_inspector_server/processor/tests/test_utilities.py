@@ -1,7 +1,7 @@
 from spectra_inspector_server.processor.utilities import _get_nested_dict_element
 
 
-def test_get_nested_dict_element():
+def test_get_nested_dict_element() -> None:
 
     d = {"a": {"b": {"c": 1}}, "d": 2, "e": {"f": 3}}
 

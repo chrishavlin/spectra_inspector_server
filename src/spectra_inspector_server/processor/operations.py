@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 
 from spectra_inspector_server._file_tree_handling import EDAXPathHandler
 from spectra_inspector_server.model import EDAX_axis, MetadataModel, Spectrum1d
@@ -9,7 +10,7 @@ class OperationEDAXStateHandler:
         self.ph = ph
         self._allow_mock_files = allow_mock_files
 
-    def _require_sample(self, sample_name: str):
+    def _require_sample(self, sample_name: str) -> None:
 
         if sample_name in self.ph.database.available_maps:
             return
@@ -25,7 +26,7 @@ class OperationEDAXStateHandler:
 
     def _validate_index_ranges(
         self, sample_name: str, input_index_ranges: list[tuple[int, int] | None]
-    ):
+    ) -> list[tuple[int, int]]:
 
         self._require_sample(sample_name)
         edax_ds = self.ph.load_edax(sample_name)
@@ -52,7 +53,7 @@ class OperationEDAXStateHandler:
         channel_index: int | tuple[int, int],
         index0_range: tuple[int, int] | None = None,
         index1_range: tuple[int, int] | None = None,
-    ):
+    ) -> npt.NDArray[np.int64]:
 
         self._require_sample(sample_name)
         input_index_ranges = [index0_range, index1_range]
@@ -60,20 +61,26 @@ class OperationEDAXStateHandler:
             sample_name, input_index_ranges
         )
 
+        channel_slice: int | slice
         if isinstance(channel_index, tuple):
             channel_slice = slice(channel_index[0], channel_index[1])
         elif isinstance(channel_index, int):
             channel_slice = channel_index
         else:
-            msg = f"unexpected type for channel_index: must be int or (int, int), but {channel_index=}"
+            msg = f"unexpected type for channel_index: must be int or (int, int), but {channel_index=}"  # type:ignore[unreachable]
             raise TypeError(msg)
 
         edax_ds = self.ph.load_edax(sample_name)
-        return edax_ds.data[
-            slice(valid_index_ranges[0][0], valid_index_ranges[0][1]),
-            slice(valid_index_ranges[1][0], valid_index_ranges[1][1]),
-            channel_slice,
-        ].copy()
+        im_subset: npt.NDArray[np.int64] = (
+            edax_ds.data[
+                slice(valid_index_ranges[0][0], valid_index_ranges[0][1]),
+                slice(valid_index_ranges[1][0], valid_index_ranges[1][1]),
+                channel_slice,
+            ]
+            .copy()
+            .astype(np.int64)
+        )
+        return im_subset
 
     def get_multi_channel_intensity_image(
         self,
@@ -83,7 +90,7 @@ class OperationEDAXStateHandler:
         index1_range: tuple[int, int] | None = None,
         chunking_index: int = 0,
         chunksize: int = 32,
-    ):
+    ) -> npt.NDArray[np.int64]:
 
         self._require_sample(sample_name)
         input_index_ranges = [index0_range, index1_range]
@@ -94,12 +101,11 @@ class OperationEDAXStateHandler:
 
         orig_ranges = index_ranges.copy()
 
-        final_shape: tuple[int, int] = tuple(
-            [indx[1] - indx[0] for indx in index_ranges[:-1]]
-        )
+        shapes_by_dim = [indx[1] - indx[0] for indx in index_ranges]
+        final_shape: tuple[int, int] = (shapes_by_dim[0], shapes_by_dim[1])
 
         index_offsets = [indx[0] for indx in index_ranges[:-1]]
-        im_output = np.zeros(final_shape)
+        im_output = np.zeros(final_shape, dtype=int)
 
         assert im_output.ndim == 2
 
@@ -158,7 +164,7 @@ class OperationEDAXStateHandler:
 
         final_shape = (index_ranges[2][1] - index_ranges[2][0],)
 
-        im_output = np.zeros(final_shape)
+        im_output = np.zeros(final_shape, dtype=int)
 
         assert im_output.ndim == 1
 

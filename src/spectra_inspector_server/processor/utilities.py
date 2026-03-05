@@ -1,4 +1,37 @@
-def _get_nested_dict_element(d: dict, nested_keys: list[str] | str):
+from typing import Any
+
+
+def _get_nested_dict_element(d: dict[str, Any], nested_keys: list[str] | str) -> Any:
+    """Given a dictionary with nested dictionaries, this returns a nested value.
+
+
+    e.g., given
+
+    a = {'b': {'c': {'d': 0}}}
+
+    then
+
+    _get_nested_dict_element(a, ('b', 'c', 'd')) will return the equivalent of
+    a['b']['c']['d'] (in this case, 0).
+
+
+    Parameters
+    ----------
+    d : dict
+        the dictionary to inspect
+    nested_keys : list[str] | str
+        the nested keys
+
+    Returns
+    -------
+    Any
+        Whatever the nested value may be.
+
+    Raises
+    ------
+    KeyError
+        If a key is accessed that does not exist
+    """
 
     if isinstance(nested_keys, str):
         nested_keys = [nested_keys]
