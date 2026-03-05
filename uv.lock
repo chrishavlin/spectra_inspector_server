@@ -4284,6 +4284,9 @@ docs = [
     { name = "sphinx-autodoc-typehints", version = "3.6.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "sphinx-copybutton" },
 ]
+lint = [
+    { name = "pre-commit" },
+]
 test = [
     { name = "httpx" },
     { name = "pytest" },
@@ -4324,6 +4327,7 @@ docs = [
     { name = "sphinx-autodoc-typehints" },
     { name = "sphinx-copybutton" },
 ]
+lint = [{ name = "pre-commit" }]
 test = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "pytest", specifier = ">=9" },
