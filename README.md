@@ -75,7 +75,7 @@ name and if not found, will default to `./`.
 ### manual type checking
 
 ```
-uv sync
+uv sync --group typing
 mypy --follow-untyped-imports .
 ```
 
