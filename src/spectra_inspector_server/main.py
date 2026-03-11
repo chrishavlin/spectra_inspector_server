@@ -7,6 +7,7 @@ from spectra_inspector_server._testing import pytest_running
 from spectra_inspector_server.dependencies import get_database_session, get_settings
 from spectra_inspector_server.model import (
     AvailableDatasets,
+    CombinedMetadata,
     Info,
     MetadataModel,
     Spectrum1dDict,
@@ -58,6 +59,18 @@ async def image_metadata(sample_name: str) -> MetadataModel:
     return ops.get_refined_metadata(sample_name)
 
 
+@app.get("/image-metadata-combined")
+async def image_metadata_combined(sample_name: str) -> CombinedMetadata:
+
+    ph = get_database_session()
+    if not _valid_sample_name(sample_name, ph):
+        msg = f"{sample_name} is not a valid sample"
+        raise HTTPException(404, detail=msg)
+
+    ops = OperationEDAXStateHandler(ph, allow_mock_files=pytest_running())
+    return ops.get_combined_metadata(sample_name)
+
+
 @app.get("/image-spectrum")
 async def image_spectrum(
     sample_name: str,
@@ -80,8 +93,8 @@ async def image_spectrum(
 async def image_data(
     sample_name: str,
     channel_index: int,
-    index0_range: tuple[int, int] | Literal["none"],
-    index1_range: tuple[int, int] | Literal["none"],
+    index0_range: tuple[int, int] | Literal["none"] | None = None,
+    index1_range: tuple[int, int] | Literal["none"] | None = None,
 ) -> raveledImage:
     ph = get_database_session()
     if not _valid_sample_name(sample_name, ph):

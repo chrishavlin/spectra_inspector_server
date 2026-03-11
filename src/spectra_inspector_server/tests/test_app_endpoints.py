@@ -4,7 +4,11 @@ from fastapi.testclient import TestClient
 
 from spectra_inspector_server._testing import _on_disc_mock
 from spectra_inspector_server.main import app
-from spectra_inspector_server.model import MetadataModel, Spectrum1dDict
+from spectra_inspector_server.model import (
+    CombinedMetadata,
+    MetadataModel,
+    Spectrum1dDict,
+)
 
 client = TestClient(app)
 
@@ -32,6 +36,20 @@ def test_image_metadata() -> None:
     assert response.status_code == 200
     mm = MetadataModel(**response.json())
     assert mm.General.title == "EDS Spectrum Image"
+
+
+def test_image_combined_metadata() -> None:
+    response = client.get(
+        "/image-metadata-combined", params={"sample_name": _on_disc_mock.filenames[0]}
+    )
+    assert response.status_code == 200
+    mm = CombinedMetadata(**response.json())
+
+    assert mm.metadata.General.title == "EDS Spectrum Image"
+
+    assert len(mm.data_shape) == 3
+    for indx in range(3):
+        assert mm.axes_by_index[indx].size == mm.data_shape[indx]
 
 
 def test_image_spectrum() -> None:
