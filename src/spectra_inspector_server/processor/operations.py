@@ -26,13 +26,13 @@ class OperationEDAXStateHandler:
 
     def _validate_index_ranges(
         self, sample_name: str, input_index_ranges: list[tuple[int, int] | None]
-    ) -> list[tuple[int, int]]:
+    ) -> tuple[list[tuple[int, int]], list[tuple[float, float]]]:
 
         self._require_sample(sample_name)
         edax_ds = self.ph.load_edax(sample_name)
 
         valid_index_ranges: list[tuple[int, int]] = []
-
+        physical_ranges: list[tuple[float, float]] = []
         for index_id, index_range in enumerate(input_index_ranges):
             valid_range: tuple[int, int]
             if index_range is None:
@@ -40,7 +40,11 @@ class OperationEDAXStateHandler:
             else:
                 valid_range = (index_range[0], index_range[1])
             valid_index_ranges.append(valid_range)
-        return valid_index_ranges
+            physical_ranges.append(
+                edax_ds.axis_range(index_id, valid_range[0], valid_range[1])
+            )
+
+        return valid_index_ranges, physical_ranges
 
     def get_sample_axes(self, sample_name: str) -> list[EDAX_axis]:
         self._require_sample(sample_name)
@@ -57,7 +61,7 @@ class OperationEDAXStateHandler:
 
         self._require_sample(sample_name)
         input_index_ranges = [index0_range, index1_range]
-        valid_index_ranges = self._validate_index_ranges(
+        valid_index_ranges, _ = self._validate_index_ranges(
             sample_name, input_index_ranges
         )
 
@@ -94,7 +98,7 @@ class OperationEDAXStateHandler:
 
         self._require_sample(sample_name)
         input_index_ranges = [index0_range, index1_range]
-        valid_index_ranges = self._validate_index_ranges(
+        valid_index_ranges, _ = self._validate_index_ranges(
             sample_name, input_index_ranges
         )
         index_ranges = [valid_index_ranges[0], valid_index_ranges[1], channel_range]
@@ -151,7 +155,7 @@ class OperationEDAXStateHandler:
 
         self._require_sample(sample_name)
         input_index_ranges = [index0_range, index1_range, channel_range]
-        valid_index_ranges = self._validate_index_ranges(
+        valid_index_ranges, physical_ranges = self._validate_index_ranges(
             sample_name, input_index_ranges
         )
         index_ranges = [
@@ -161,9 +165,7 @@ class OperationEDAXStateHandler:
         ]
 
         orig_ranges = index_ranges.copy()
-
         final_shape = (index_ranges[2][1] - index_ranges[2][0],)
-
         im_output = np.zeros(final_shape, dtype=int)
 
         assert im_output.ndim == 1
@@ -189,8 +191,14 @@ class OperationEDAXStateHandler:
             i_chunk_0 += chunksize
 
         energy_channel_axis = np.arange(index_ranges[2][0], index_ranges[2][1])
+        energy_min, energy_max = physical_ranges[2]
 
-        return Spectrum1d(energy=energy_channel_axis, intensity=im_output)
+        return Spectrum1d(
+            energy=energy_channel_axis,
+            intensity=im_output,
+            energy_min=energy_min,
+            energy_max=energy_max,
+        )
 
     def get_refined_metadata(self, sample_name: str) -> MetadataModel:
         self._require_sample(sample_name)

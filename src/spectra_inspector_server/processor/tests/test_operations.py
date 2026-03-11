@@ -73,3 +73,23 @@ def test_get_refined_metadata(edax_path_handler: EDAXPathHandler) -> None:
     md = ops.get_refined_metadata(fake_filename)
     az = md.Acquisition_instrument.SEM.Detector.EDS.azimuth_angle
     assert np.isreal(az)
+
+
+def test_get_spectrum(edax_path_handler: EDAXPathHandler) -> None:
+    fake_filename = _on_disc_mock.filenames[0]
+    ops = OperationEDAXStateHandler(edax_path_handler, allow_mock_files=True)
+    s1d = ops.get_spectrum(fake_filename)
+    assert s1d.energy_max > s1d.energy_min
+    assert np.all(np.isreal(s1d.energy))
+    assert np.all(np.isreal(s1d.intensity))
+
+    s1d_2 = ops.get_spectrum(
+        fake_filename,
+        channel_range=(1, 5),
+        index0_range=(0, 5),
+        index1_range=(1, 3),
+    )
+    assert s1d.energy_max > s1d.energy_min
+    assert np.all(np.isreal(s1d.energy))
+    assert np.all(np.isreal(s1d.intensity))
+    assert len(s1d_2.energy) == 4

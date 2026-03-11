@@ -32,19 +32,26 @@ class EDAX_axis:
 class Spectrum1dDict:
     energy: list[float]
     intensity: list[float]
+    energy_min: float
+    energy_max: float
 
 
 @dataclass
 class Spectrum1d:
-    energy: npt.NDArray[np.int64]
+    energy: npt.NDArray[np.int64]  # energy index
     intensity: npt.NDArray[np.int64]
+    energy_min: float
+    energy_max: float
 
     def tolist(self) -> list[list[float]]:
         return [self.energy.tolist(), self.intensity.tolist()]
 
     def todict(self) -> Spectrum1dDict:
         return Spectrum1dDict(
-            energy=self.energy.tolist(), intensity=self.intensity.tolist()
+            energy=self.energy.tolist(),
+            intensity=self.intensity.tolist(),
+            energy_min=self.energy_min,
+            energy_max=self.energy_max,
         )
 
 
@@ -94,7 +101,7 @@ class MetadataModel(BaseModel):
 
 
 class EDAX_raw_ds:
-    data: npt.NDArray  # type: ignore[type-arg]
+    data: npt.NDArray[np.int64]
     axes: list[EDAX_axis]
     metadata: dict[str, Any]
     original_metadata: dict[str, Any]
@@ -104,7 +111,7 @@ class EDAX_raw_ds:
 
         axes = [EDAX_axis(**ax_dict) for ax_dict in raw_ds["axes"]]
 
-        valid_data: npt.NDArray = raw_ds["data"]  # type: ignore[type-arg]
+        valid_data: npt.NDArray[np.int64] = raw_ds["data"]
         self.data = valid_data
         self.axes = axes
         self.metadata = raw_ds["metadata"]
@@ -154,6 +161,53 @@ class EDAX_raw_ds:
             Acquisition_instrument=ai,
             Sample=samp,
         )
+
+    def _rescale_index(self, axis_id: int, index: int) -> float:
+        axis = self.axes_by_index[axis_id]
+        return float(axis.scale * index + axis.offset)
+
+    def axis_range(
+        self, axis_id: int, indx_start: int = 0, indx_end: int | None = None
+    ) -> tuple[float, float]:
+        """get physical range of an axis with optional subselection
+
+        Parameters
+        ----------
+        axis_id : int
+            the axis id index (0, 1 or 2)
+        indx_start : int, optional
+            starting index, by default 0
+        indx_end : int | None, optional
+            end index, by default None, will use max available index
+            if None.
+
+        Returns
+        -------
+        tuple[float, float]
+            (min_val, max_val)
+
+        """
+
+        min_val = self._rescale_index(axis_id, indx_start)
+        max_size = self.axes_by_index[axis_id].size
+        if indx_end is None:
+            indx_end = max_size
+        assert isinstance(indx_end, int)
+
+        if indx_end < indx_start:
+            msg = f"end index is < start index: {indx_start=}, {indx_end=}"
+            raise ValueError(msg)
+
+        if indx_start < 0:
+            msg = f"start index cannot be < 0: {indx_start=}"
+            raise ValueError(msg)
+
+        if indx_end > max_size:
+            msg = f"end index cannot be > size of array: {indx_end=}, {max_size=}"
+            raise ValueError(msg)
+
+        max_val = self._rescale_index(axis_id, indx_end)
+        return min_val, max_val
 
 
 @dataclass
