@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException
 
@@ -10,6 +10,7 @@ from spectra_inspector_server.model import (
     Info,
     MetadataModel,
     Spectrum1dDict,
+    raveledImage,
 )
 from spectra_inspector_server.processor.operations import OperationEDAXStateHandler
 from spectra_inspector_server.settings import Settings
@@ -73,3 +74,31 @@ async def image_spectrum(
         # TODO: optional args
     )
     return result.todict()
+
+
+@app.get("/image-data")
+async def image_data(
+    sample_name: str,
+    channel_index: int,
+    index0_range: tuple[int, int] | Literal["none"],
+    index1_range: tuple[int, int] | Literal["none"],
+) -> raveledImage:
+    ph = get_database_session()
+    if not _valid_sample_name(sample_name, ph):
+        msg = f"{sample_name} is not a valid sample"
+        raise HTTPException(404, detail=msg)
+
+    ops = OperationEDAXStateHandler(ph, allow_mock_files=pytest_running())
+
+    if index0_range == "none":
+        index0_range = None
+    if index1_range == "none":
+        index1_range = None
+
+    result = ops.get_image(
+        sample_name, channel_index, index0_range=index0_range, index1_range=index1_range
+    )
+    shp = result.shape
+    im = result.ravel().tolist()
+
+    return raveledImage(image=im, shape=shp)

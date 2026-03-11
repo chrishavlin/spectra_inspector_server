@@ -219,3 +219,8 @@ class Info:
 @dataclass
 class AvailableDatasets:
     available_files: list[str]
+
+
+class raveledImage(BaseModel):
+    image: list[int]
+    shape: tuple[int, int]
