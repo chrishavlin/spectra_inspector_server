@@ -2,7 +2,12 @@ import numpy as np
 import numpy.typing as npt
 
 from spectra_inspector_server._file_tree_handling import EDAXPathHandler
-from spectra_inspector_server.model import EDAX_axis, MetadataModel, Spectrum1d
+from spectra_inspector_server.model import (
+    CombinedMetadata,
+    EDAX_axis,
+    MetadataModel,
+    Spectrum1d,
+)
 
 
 class OperationEDAXStateHandler:
@@ -204,3 +209,14 @@ class OperationEDAXStateHandler:
         self._require_sample(sample_name)
         fl = self.ph.load_edax(sample_name)
         return fl.refined_metadata
+
+    def get_combined_metadata(self, sample_name: str) -> CombinedMetadata:
+        self._require_sample(sample_name)
+        fl = self.ph.load_edax(sample_name)
+        mm = fl.refined_metadata
+
+        axes = fl.axes_by_index
+        shp = fl.data.shape
+        assert len(shp) == 3
+
+        return CombinedMetadata(metadata=mm, axes_by_index=axes, data_shape=shp)

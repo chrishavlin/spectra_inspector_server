@@ -17,12 +17,11 @@ class EDAX_file_set(BaseModel):
     xml: Path
 
 
-@dataclass
-class EDAX_axis:
+class EDAX_axis(BaseModel):
     size: int
     index_in_array: int
     name: str
-    scale: np.float32
+    scale: float
     offset: int
     units: str
     navigate: bool
@@ -98,6 +97,12 @@ class MetadataModel(BaseModel):
     Signal: Signal
     Acquisition_instrument: AcquisitionInstrument
     Sample: Sample
+
+
+class CombinedMetadata(BaseModel):
+    metadata: MetadataModel
+    axes_by_index: dict[int, EDAX_axis]
+    data_shape: tuple[int, int, int]
 
 
 class EDAX_raw_ds:
@@ -219,3 +224,8 @@ class Info:
 @dataclass
 class AvailableDatasets:
     available_files: list[str]
+
+
+class raveledImage(BaseModel):
+    image: list[int]
+    shape: tuple[int, int]
