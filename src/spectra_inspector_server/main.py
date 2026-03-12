@@ -75,6 +75,12 @@ async def image_metadata_combined(sample_name: str) -> CombinedMetadata:
 @app.get("/image-spectrum")
 async def image_spectrum(
     sample_name: str,
+    channel_0: int | None = None,
+    channel_1: int | None = None,
+    index0_0: int | None | Literal["none"] = None,
+    index0_1: int | None | Literal["none"] = None,
+    index1_0: int | None | Literal["none"] = None,
+    index1_1: int | None | Literal["none"] = None,
 ) -> Spectrum1dDict:
 
     ph = get_database_session()
@@ -83,9 +89,30 @@ async def image_spectrum(
         raise HTTPException(404, detail=msg)
 
     ops = OperationEDAXStateHandler(ph, allow_mock_files=pytest_running())
+
+    index0_range: None | tuple[int, int]
+    if isinstance(index0_0, int) and isinstance(index0_1, int):
+        index0_range = (int(index0_0), int(index0_1))
+    else:
+        index0_range = None
+
+    index1_range: None | tuple[int, int]
+    if isinstance(index1_0, int) and isinstance(index1_1, int):
+        index1_range = (int(index1_0), int(index1_1))
+    else:
+        index1_range = None
+
+    channel_range: None | tuple[int, int]
+    if isinstance(channel_0, int) and isinstance(channel_1, int):
+        channel_range = (int(channel_0), int(channel_1))
+    else:
+        channel_range = None
+
     result = ops.get_spectrum(
         sample_name,
-        # TODO: optional args
+        channel_range=channel_range,
+        index0_range=index0_range,
+        index1_range=index1_range,
     )
     return result.todict()
 
@@ -106,16 +133,17 @@ async def image_data(
 
     ops = OperationEDAXStateHandler(ph, allow_mock_files=pytest_running())
 
-    index0_range = (index0_0, index0_1)
-    if index0_0 == "none":
-        index0_0 = None
-    if index0_1 == "none":
-        index0_1 = None
+    index0_range: None | tuple[int, int]
+    if isinstance(index0_0, int) and isinstance(index0_1, int):
+        index0_range = (int(index0_0), int(index0_1))
+    else:
+        index0_range = None
 
-    if index1_0 == "none":
-        index1_0 = None
-    if index1_1 == "none":
-        index1_1 = None
+    index1_range: None | tuple[int, int]
+    if isinstance(index1_0, int) and isinstance(index1_1, int):
+        index1_range = (int(index1_0), int(index1_1))
+    else:
+        index1_range = None
 
     result = ops.get_image(
         sample_name, channel_index, index0_range=index0_range, index1_range=index1_range
@@ -129,9 +157,12 @@ async def image_data(
 @app.get("/image-data-summed")
 async def image_data_summed(
     sample_name: str,
-    channel_range: tuple[int, int],
-    index0_range: tuple[int, int] | Literal["none"] | None = None,
-    index1_range: tuple[int, int] | Literal["none"] | None = None,
+    channel_0: int,
+    channel_1: int,
+    index0_0: int | None | Literal["none"] = None,
+    index0_1: int | None | Literal["none"] = None,
+    index1_0: int | None | Literal["none"] = None,
+    index1_1: int | None | Literal["none"] = None,
 ) -> raveledImage:
     ph = get_database_session()
     if not _valid_sample_name(sample_name, ph):
@@ -140,11 +171,19 @@ async def image_data_summed(
 
     ops = OperationEDAXStateHandler(ph, allow_mock_files=pytest_running())
 
-    if index0_range == "none":
+    index0_range: None | tuple[int, int]
+    if isinstance(index0_0, int) and isinstance(index0_1, int):
+        index0_range = (int(index0_0), int(index0_1))
+    else:
         index0_range = None
-    if index1_range == "none":
+
+    index1_range: None | tuple[int, int]
+    if isinstance(index1_0, int) and isinstance(index1_1, int):
+        index1_range = (int(index1_0), int(index1_1))
+    else:
         index1_range = None
 
+    channel_range = (channel_0, channel_1)
     msg = f"fetching summed channel intensity for {sample_name} with {channel_range=}, {index0_range=}, {index1_range=}"
     spectraLogger.info(msg)
 

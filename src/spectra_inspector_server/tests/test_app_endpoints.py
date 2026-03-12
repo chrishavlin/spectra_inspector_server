@@ -8,6 +8,7 @@ from spectra_inspector_server.model import (
     CombinedMetadata,
     MetadataModel,
     Spectrum1dDict,
+    raveledImage,
 )
 
 client = TestClient(app)
@@ -61,3 +62,78 @@ def test_image_spectrum() -> None:
     spectrum = Spectrum1dDict(**response.json())
     assert np.all(np.isreal(spectrum.energy))
     assert np.all(np.isreal(spectrum.intensity))
+
+
+def test_image_data() -> None:
+    response = client.get(
+        "/image-data",
+        params={"sample_name": _on_disc_mock.filenames[0], "channel_index": 2},
+    )
+    assert response.status_code == 200
+    spectrum = raveledImage(**response.json())
+    assert len(spectrum.shape) == 2
+    assert len(spectrum.image) == np.prod(spectrum.shape)
+    assert np.all(np.isreal(spectrum.image))
+    assert np.all(np.isreal(spectrum.shape))
+
+
+def test_image_data_subset() -> None:
+    response = client.get(
+        "/image-data",
+        params={
+            "sample_name": _on_disc_mock.filenames[0],
+            "channel_index": 2,
+            "index0_0": 2,
+            "index0_1": 5,
+            "index1_0": 3,
+            "index1_1": 8,
+        },
+    )
+    assert response.status_code == 200
+    spectrum = raveledImage(**response.json())
+    assert len(spectrum.shape) == 2
+    assert len(spectrum.image) == np.prod(spectrum.shape)
+    assert np.all(np.isreal(spectrum.image))
+    assert np.all(np.isreal(spectrum.shape))
+
+    assert spectrum.shape == (3, 5)
+
+
+def test_image_data_summed() -> None:
+    response = client.get(
+        "/image-data-summed",
+        params={
+            "sample_name": _on_disc_mock.filenames[0],
+            "channel_0": 0,
+            "channel_1": 4,
+        },
+    )
+    assert response.status_code == 200
+    spectrum = raveledImage(**response.json())
+    assert len(spectrum.shape) == 2
+    assert len(spectrum.image) == np.prod(spectrum.shape)
+    assert np.all(np.isreal(spectrum.image))
+    assert np.all(np.isreal(spectrum.shape))
+
+
+def test_image_data_summed_subset() -> None:
+    response = client.get(
+        "/image-data-summed",
+        params={
+            "sample_name": _on_disc_mock.filenames[0],
+            "channel_0": 0,
+            "channel_1": 4,
+            "index0_0": 2,
+            "index0_1": 5,
+            "index1_0": 3,
+            "index1_1": 8,
+        },
+    )
+    assert response.status_code == 200
+    spectrum = raveledImage(**response.json())
+    assert len(spectrum.shape) == 2
+    assert len(spectrum.image) == np.prod(spectrum.shape)
+    assert np.all(np.isreal(spectrum.image))
+    assert np.all(np.isreal(spectrum.shape))
+
+    assert spectrum.shape == (3, 5)
