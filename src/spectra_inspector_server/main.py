@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 from fastapi import Depends, FastAPI, HTTPException
 
 from spectra_inspector_server._file_tree_handling import EDAXPathHandler
+from spectra_inspector_server._logging import spectraLogger
 from spectra_inspector_server._testing import pytest_running
 from spectra_inspector_server.dependencies import get_database_session, get_settings
 from spectra_inspector_server.model import (
@@ -93,6 +94,42 @@ async def image_spectrum(
 async def image_data(
     sample_name: str,
     channel_index: int,
+    index0_0: int | None | Literal["none"] = None,
+    index0_1: int | None | Literal["none"] = None,
+    index1_0: int | None | Literal["none"] = None,
+    index1_1: int | None | Literal["none"] = None,
+) -> raveledImage:
+    ph = get_database_session()
+    if not _valid_sample_name(sample_name, ph):
+        msg = f"{sample_name} is not a valid sample"
+        raise HTTPException(404, detail=msg)
+
+    ops = OperationEDAXStateHandler(ph, allow_mock_files=pytest_running())
+
+    index0_range = (index0_0, index0_1)
+    if index0_0 == "none":
+        index0_0 = None
+    if index0_1 == "none":
+        index0_1 = None
+
+    if index1_0 == "none":
+        index1_0 = None
+    if index1_1 == "none":
+        index1_1 = None
+
+    result = ops.get_image(
+        sample_name, channel_index, index0_range=index0_range, index1_range=index1_range
+    )
+    shp = result.shape
+    im = result.ravel().tolist()
+
+    return raveledImage(image=im, shape=shp)
+
+
+@app.get("/image-data-summed")
+async def image_data_summed(
+    sample_name: str,
+    channel_range: tuple[int, int],
     index0_range: tuple[int, int] | Literal["none"] | None = None,
     index1_range: tuple[int, int] | Literal["none"] | None = None,
 ) -> raveledImage:
@@ -108,9 +145,13 @@ async def image_data(
     if index1_range == "none":
         index1_range = None
 
-    result = ops.get_image(
-        sample_name, channel_index, index0_range=index0_range, index1_range=index1_range
+    msg = f"fetching summed channel intensity for {sample_name} with {channel_range=}, {index0_range=}, {index1_range=}"
+    spectraLogger.info(msg)
+
+    result = ops.get_multi_channel_intensity_image(
+        sample_name, channel_range, index0_range=index0_range, index1_range=index1_range
     )
+
     shp = result.shape
     im = result.ravel().tolist()
 
