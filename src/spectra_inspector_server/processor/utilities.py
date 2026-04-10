@@ -51,27 +51,27 @@ def _get_nested_dict_element(d: dict[str, Any], nested_keys: list[str] | str) ->
     raise KeyError(msg)
 
 
-def _get_np_types():
-    _np_types = []
+def _get_np_types() -> tuple[type, ...]:
+    _np_types: list[type] = []
     for nb in (
         16,
         32,
         64,
     ):
-        _np_types.append(getattr(np, f"float{nb}"))
-        _np_types.append(getattr(np, f"int{nb}"))
-        _np_types.append(getattr(np, f"uint{nb}"))
-
+        for typ in ("float", "int", "uint"):
+            nptype = getattr(np, f"{typ}{nb}")
+            assert isinstance(nptype, type)
+            _np_types.append(nptype)
     return tuple(_np_types)
 
 
 _np_types = _get_np_types()
 
 
-def _make_serializeable_dict(md_dict: dict) -> dict:
+def _make_serializeable_dict(md_dict: dict[str, Any]) -> dict[str, Any]:
     new_dict = {}
     for k, v in md_dict.items():
-        if isinstance(v, _np_types):
+        if isinstance(v, _np_types) and hasattr(v, "item"):
             new_dict[k] = v.item()
         elif k == "charText":
             # list of bytes_

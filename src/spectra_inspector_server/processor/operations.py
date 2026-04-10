@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 import numpy.typing as npt
 
@@ -32,7 +34,9 @@ class OperationEDAXStateHandler:
 
     def _validate_index_ranges(
         self, sample_name: str, input_index_ranges: list[tuple[int, int] | None]
-    ) -> tuple[list[tuple[int, int]], list[tuple[float, float]], dict, dict]:
+    ) -> tuple[
+        list[tuple[int, int]], list[tuple[float, float]], dict[str, Any], dict[str, Any]
+    ]:
 
         self._require_sample(sample_name)
         edax_ds = self.ph.load_edax(sample_name)
