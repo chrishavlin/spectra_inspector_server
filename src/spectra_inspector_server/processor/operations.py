@@ -8,6 +8,7 @@ from spectra_inspector_server.model import (
     MetadataModel,
     Spectrum1d,
 )
+from spectra_inspector_server.processor.utilities import _make_serializeable_dict
 
 
 class OperationEDAXStateHandler:
@@ -31,7 +32,7 @@ class OperationEDAXStateHandler:
 
     def _validate_index_ranges(
         self, sample_name: str, input_index_ranges: list[tuple[int, int] | None]
-    ) -> tuple[list[tuple[int, int]], list[tuple[float, float]]]:
+    ) -> tuple[list[tuple[int, int]], list[tuple[float, float]], dict, dict]:
 
         self._require_sample(sample_name)
         edax_ds = self.ph.load_edax(sample_name)
@@ -49,7 +50,10 @@ class OperationEDAXStateHandler:
                 edax_ds.axis_range(index_id, valid_range[0], valid_range[1])
             )
 
-        return valid_index_ranges, physical_ranges
+        md = _make_serializeable_dict(edax_ds.metadata)
+        orig_md = _make_serializeable_dict(edax_ds.original_metadata)
+
+        return valid_index_ranges, physical_ranges, md, orig_md
 
     def get_sample_axes(self, sample_name: str) -> list[EDAX_axis]:
         self._require_sample(sample_name)
@@ -66,7 +70,7 @@ class OperationEDAXStateHandler:
 
         self._require_sample(sample_name)
         input_index_ranges = [index0_range, index1_range]
-        valid_index_ranges, _ = self._validate_index_ranges(
+        valid_index_ranges, _, _, _ = self._validate_index_ranges(
             sample_name, input_index_ranges
         )
 
@@ -103,7 +107,7 @@ class OperationEDAXStateHandler:
 
         self._require_sample(sample_name)
         input_index_ranges = [index0_range, index1_range]
-        valid_index_ranges, _ = self._validate_index_ranges(
+        valid_index_ranges, _, _, _ = self._validate_index_ranges(
             sample_name, input_index_ranges
         )
         index_ranges = [valid_index_ranges[0], valid_index_ranges[1], channel_range]
@@ -160,7 +164,7 @@ class OperationEDAXStateHandler:
 
         self._require_sample(sample_name)
         input_index_ranges = [index0_range, index1_range, channel_range]
-        valid_index_ranges, physical_ranges = self._validate_index_ranges(
+        valid_index_ranges, physical_ranges, md, md_orig = self._validate_index_ranges(
             sample_name, input_index_ranges
         )
         index_ranges = [
@@ -203,6 +207,8 @@ class OperationEDAXStateHandler:
             intensity=im_output,
             energy_min=energy_min,
             energy_max=energy_max,
+            metadata=md,
+            original_metadata=md_orig,
         )
 
     def get_refined_metadata(self, sample_name: str) -> MetadataModel:

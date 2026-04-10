@@ -1,5 +1,7 @@
 from typing import Any
 
+import numpy as np
+
 
 def _get_nested_dict_element(d: dict[str, Any], nested_keys: list[str] | str) -> Any:
     """Given a dictionary with nested dictionaries, this returns a nested value.
@@ -47,3 +49,39 @@ def _get_nested_dict_element(d: dict[str, Any], nested_keys: list[str] | str) ->
 
     msg = f"{nested_keys[0]} is not in dictionary"
     raise KeyError(msg)
+
+
+def _get_np_types():
+    _np_types = []
+    for nb in (
+        16,
+        32,
+        64,
+    ):
+        _np_types.append(getattr(np, f"float{nb}"))
+        _np_types.append(getattr(np, f"int{nb}"))
+        _np_types.append(getattr(np, f"uint{nb}"))
+
+    return tuple(_np_types)
+
+
+_np_types = _get_np_types()
+
+
+def _make_serializeable_dict(md_dict: dict) -> dict:
+    new_dict = {}
+    for k, v in md_dict.items():
+        if isinstance(v, _np_types):
+            new_dict[k] = v.item()
+        elif k == "charText":
+            # list of bytes_
+            continue
+        elif isinstance(v, np.ndarray):
+            new_dict[k] = v.tolist()
+        elif isinstance(v, dict):
+            new_dict[k] = _make_serializeable_dict(v)
+        elif isinstance(v, (np.void, np.bytes_)):
+            continue
+        else:
+            new_dict[k] = v
+    return new_dict
