@@ -33,8 +33,8 @@ class Spectrum1dDict:
     intensity: list[float]
     energy_min: float
     energy_max: float
-    metadata: dict[str, Any] | None
-    original_metadata: dict[str, Any] | None
+    metadata: dict[str, Any] | None = None
+    original_metadata: dict[str, Any] | None = None
 
 
 @dataclass
@@ -43,8 +43,8 @@ class Spectrum1d:
     intensity: npt.NDArray[np.int64]
     energy_min: float
     energy_max: float
-    metadata: dict[str, Any] | None
-    original_metadata: dict[str, Any] | None
+    metadata: dict[str, Any] | None = None
+    original_metadata: dict[str, Any] | None = None
 
     def tolist(self) -> list[list[float]]:
         return [self.energy.tolist(), self.intensity.tolist()]
