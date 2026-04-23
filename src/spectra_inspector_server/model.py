@@ -233,8 +233,21 @@ class Info:
 
 
 @dataclass
+class sampleMetadataCSVrecord:
+    sample_id: str
+    lat: float
+    lon: float
+
+
+@dataclass
+class sampleMetadata:
+    records: list[sampleMetadataCSVrecord]
+
+
+@dataclass
 class AvailableDatasets:
     available_files: list[str]
+    sample_metadata: sampleMetadata | None = None
 
 
 class raveledImage(BaseModel):

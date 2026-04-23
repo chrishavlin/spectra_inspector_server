@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from spectra_inspector_server._database.sample_metadata import SampleMetadataMapper
 from spectra_inspector_server._logging import spectraLogger
 from spectra_inspector_server.model import EDAX_file_set
 
@@ -10,8 +11,16 @@ if TYPE_CHECKING:
 
 class OnDiskDatabase:
     available_maps: dict[str, EDAX_file_set]
+    sample_metadata_csv: str
+    sample_metadata_fullpath: Path | None = None
 
-    def __init__(self, ph: "EDAXPathHandler", init_db: bool = True):
+    def __init__(
+        self,
+        ph: "EDAXPathHandler",
+        init_db: bool = True,
+        sample_metadata_csv: str = "sample_metadata.csv",
+    ):
+        self.sample_metadata_csv = sample_metadata_csv
         self.available_maps = {}
         if init_db:
             self.inspect(ph)
@@ -19,6 +28,10 @@ class OnDiskDatabase:
     def inspect(self, ph: "EDAXPathHandler") -> None:
         spectraLogger.info(f"Inspecting {ph.data_root}")
         _recursive_inspection(ph.data_root, self)
+
+        smp = ph.data_root / self.sample_metadata_csv
+        if smp.is_file():
+            self.sample_metadata_fullpath = smp
 
     def add_fileset(self, basename: str, files: dict[str, Path]) -> None:
         if basename in self.available_maps:
@@ -28,6 +41,10 @@ class OnDiskDatabase:
         new_set = EDAX_file_set(**files)
         spectraLogger.debug(f"adding {basename} to available_maps")
         self.available_maps[basename] = new_set
+
+    @property
+    def sample_metadata_mapper(self) -> SampleMetadataMapper:
+        return SampleMetadataMapper(self.sample_metadata_fullpath)
 
 
 _expected_exts = [".spd", ".spc", ".ipr", ".bmp", ".xml"]

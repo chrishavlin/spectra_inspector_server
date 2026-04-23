@@ -45,7 +45,9 @@ async def avaialbe_datasets() -> AvailableDatasets:
 
     ph = get_database_session()
     filekeys = [str(nm) for nm in ph.database.available_maps]
-    return AvailableDatasets(available_files=filekeys)
+
+    all_meta = ph.database.sample_metadata_mapper.get_all()
+    return AvailableDatasets(available_files=filekeys, sample_metadata=all_meta)
 
 
 @app.get("/image-metadata")
