@@ -237,6 +237,8 @@ class sampleMetadataCSVrecord:
     sample_id: str
     lat: float
     lon: float
+    group_name: str
+    sample_type: str
 
 
 @dataclass

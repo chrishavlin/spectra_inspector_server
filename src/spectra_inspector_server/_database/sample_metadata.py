@@ -25,6 +25,7 @@ class SampleMetadataMapper:
     def df(self) -> pd.DataFrame:
         if self._df is None and self.exists:
             self._df = pd.read_csv(self.sample_metadata_fullpath)
+            self._df = self._df.rename(columns={"sample_name": "sample_id"})
         if self._df is None:
             msg = f"Could not find CSV Metadata file: {self.sample_metadata_fullpath}"
             raise FileNotFoundError(msg)
@@ -33,13 +34,33 @@ class SampleMetadataMapper:
     def get_sample(self, sample_id: str) -> sampleMetadataCSVrecord | None:
         dfi = self.df[self.df.sample_id == sample_id]
         if len(dfi) == 1:
-            return sampleMetadataCSVrecord(**dfi.iloc[0].to_dict())
+            rec = dfi.iloc[0].to_dict()
+            sm_rec = sampleMetadataCSVrecord(
+                sample_id=rec["sample_id"],
+                lat=rec["lat"],
+                lon=rec["lon"],
+                sample_type=rec["sample_type"],
+                group_name=rec["group_name"],
+            )
+            return sm_rec
         return None
 
     def get_all(self) -> sampleMetadata:
         recs = json.loads(self.df.to_json(orient="records"))
-        records = [sampleMetadataCSVrecord(**rec) for rec in recs]
-        return sampleMetadata(records=records)
+
+        fullrecords = []
+        for rec in recs:
+            fullrecords.append(
+                sampleMetadataCSVrecord(
+                    sample_id=rec["sample_id"],
+                    lat=rec["lat"],
+                    lon=rec["lon"],
+                    sample_type=rec["sample_type"],
+                    group_name=rec["group_name"],
+                )
+            )
+
+        return sampleMetadata(records=fullrecords)
 
     @property
     def columns(self) -> list[str]:
