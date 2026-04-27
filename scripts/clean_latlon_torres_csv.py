@@ -11,12 +11,16 @@
 #
 # uv run clean_latlon_torres_csv.py /path/to/TorresSampleLocation-prepped.csv
 #
+import logging
 import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from latloncalc.latlon import string2latlon
+
+spectraLogger = logging.getLogger("spectra_inspector_utility")
+spectraLogger.setLevel(logging.INFO)
 
 
 def clean_row(row):
@@ -54,10 +58,8 @@ def split_gps_row(row):
     latlon = gpsstr.split(" ")
     latlon_strs = []
     for ll in [latlon[0], latlon[-1]]:
-        ll = ll.replace("'", " ")
-        ll = ll.replace("°", " ")
-        ll = ll.replace('"', " ")
-        latlon_strs.append(ll)
+        ll_valid = ll.replace("'", " ").replace("°", " ").replace('"', " ")
+        latlon_strs.append(ll_valid)
 
     palmyra = string2latlon(latlon_strs[0], latlon_strs[1], "d% %m% %S% %H")
 
@@ -105,7 +107,8 @@ def main() -> None:
     f = Path(sys.argv[1])
     df = clean_torres_csv(f)
     fout = f.parent / "sample_metadata.csv"
-    print(f"writing {fout}")
+    msg = f"writing {fout}"
+    spectraLogger.info(msg)
     df.to_csv(fout, index=False)
 
 

@@ -35,31 +35,13 @@ class SampleMetadataMapper:
         dfi = self.df[self.df.sample_id == sample_id]
         if len(dfi) == 1:
             rec = dfi.iloc[0].to_dict()
-            sm_rec = sampleMetadataCSVrecord(
-                sample_id=rec["sample_id"],
-                lat=rec["lat"],
-                lon=rec["lon"],
-                sample_type=rec["sample_type"],
-                group_name=rec["group_name"],
-            )
-            return sm_rec
+            return _coerce_rec(rec)
         return None
 
     def get_all(self) -> sampleMetadata:
         recs = json.loads(self.df.to_json(orient="records"))
 
-        fullrecords = []
-        for rec in recs:
-            fullrecords.append(
-                sampleMetadataCSVrecord(
-                    sample_id=rec["sample_id"],
-                    lat=rec["lat"],
-                    lon=rec["lon"],
-                    sample_type=rec["sample_type"],
-                    group_name=rec["group_name"],
-                )
-            )
-
+        fullrecords = [_coerce_rec(rec) for rec in recs]
         return sampleMetadata(records=fullrecords)
 
     @property
@@ -69,3 +51,13 @@ class SampleMetadataMapper:
             msg = "CSV columns do not match expected format"
             raise RuntimeError(msg)
         return cols
+
+
+def _coerce_rec(rec: dict) -> sampleMetadataCSVrecord:
+    return sampleMetadataCSVrecord(
+        sample_id=rec["sample_id"],
+        lat=rec["lat"],
+        lon=rec["lon"],
+        sample_type=rec["sample_type"],
+        group_name=rec["group_name"],
+    )
