@@ -47,11 +47,13 @@ class SampleMetadataMapper:
             ]
             df_available = pd.DataFrame(recs)
             df = pd.merge(df_available, df, on="sample_id", how="left")
+            df = df.drop("map_id", axis=1)
+            df = df.drop_duplicates()
 
         recs = json.loads(df.to_json(orient="records"))
 
         fullrecords = [sampleMetadataCSVrecord.from_rec(rec) for rec in recs]
-        return sampleMetadata(records=fullrecords)
+        return sampleMetadata(records=fullrecords, map_samples=availabe_samples)
 
     @property
     def columns(self) -> list[str]:

@@ -237,6 +237,7 @@ class sampleMetadataCSVrecord:
     sample_id: str
     lat: float
     lon: float
+    elevation: float
     group_name: str
     sample_type: str
     description: str
@@ -250,12 +251,14 @@ class sampleMetadataCSVrecord:
             sample_type=rec["sample_type"],
             group_name=rec["group_name"],
             description=rec["description"],
+            elevation=rec["elevation"],
         )
 
 
 @dataclass
 class sampleMetadata:
     records: list[sampleMetadataCSVrecord]
+    map_samples: dict[str, str] | None = None
 
 
 @dataclass
