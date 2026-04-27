@@ -46,7 +46,10 @@ async def avaialbe_datasets() -> AvailableDatasets:
     ph = get_database_session()
     filekeys = [str(nm) for nm in ph.database.available_maps]
 
-    all_meta = ph.database.sample_metadata_mapper.get_all()
+    availabe_samples = ph.database.available_samples
+    all_meta = ph.database.sample_metadata_mapper.get_all(
+        availabe_samples=availabe_samples
+    )
     return AvailableDatasets(available_files=filekeys, sample_metadata=all_meta)
 
 

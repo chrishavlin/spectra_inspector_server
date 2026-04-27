@@ -239,6 +239,18 @@ class sampleMetadataCSVrecord:
     lon: float
     group_name: str
     sample_type: str
+    description: str
+
+    @staticmethod
+    def from_rec(rec: dict) -> "sampleMetadataCSVrecord":
+        return sampleMetadataCSVrecord(
+            sample_id=rec["sample_id"],
+            lat=rec["lat"],
+            lon=rec["lon"],
+            sample_type=rec["sample_type"],
+            group_name=rec["group_name"],
+            description=rec["description"],
+        )
 
 
 @dataclass

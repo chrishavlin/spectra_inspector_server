@@ -46,6 +46,23 @@ class OnDiskDatabase:
     def sample_metadata_mapper(self) -> SampleMetadataMapper:
         return SampleMetadataMapper(self.sample_metadata_fullpath)
 
+    _available_samples: dict[str, str] | None = None
+
+    @property
+    def available_samples(self) -> dict[str, str]:
+        if self._available_samples is None:
+            samples = {
+                mapn: _map_to_sample_name(str(mapn)) for mapn in self.available_maps
+            }
+            self._available_samples = samples
+        return self._available_samples
+
+
+def _map_to_sample_name(map_name: str) -> str:
+    if "Map" not in map_name:
+        return map_name
+    return map_name.split("Map", maxsplit=1)[0].strip()
+
 
 _expected_exts = [".spd", ".spc", ".ipr", ".bmp", ".xml"]
 

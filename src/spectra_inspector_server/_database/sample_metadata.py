@@ -7,7 +7,7 @@ from spectra_inspector_server.model import sampleMetadata, sampleMetadataCSVreco
 
 # expected CSV format
 #
-# sample_id, lat, lon
+# group_name,sample_name,sample_type,description,gps,elevation,location_notes,gps_quality_note,elvation_quality_note,processing_note,lat_str,lon_str,lat,lon
 # C-12, -50.953878, -72.983542
 
 
@@ -35,13 +35,22 @@ class SampleMetadataMapper:
         dfi = self.df[self.df.sample_id == sample_id]
         if len(dfi) == 1:
             rec = dfi.iloc[0].to_dict()
-            return _coerce_rec(rec)
+            return sampleMetadataCSVrecord.from_rec(rec)
         return None
 
-    def get_all(self) -> sampleMetadata:
-        recs = json.loads(self.df.to_json(orient="records"))
+    def get_all(self, availabe_samples: None | dict[str, str] = None) -> sampleMetadata:
 
-        fullrecords = [_coerce_rec(rec) for rec in recs]
+        df = self.df
+        if availabe_samples is not None:
+            recs = [
+                {"map_id": m, "sample_id": sid} for m, sid in availabe_samples.items()
+            ]
+            df_available = pd.DataFrame(recs)
+            df = pd.merge(df_available, df, on="sample_id", how="left")
+
+        recs = json.loads(df.to_json(orient="records"))
+
+        fullrecords = [sampleMetadataCSVrecord.from_rec(rec) for rec in recs]
         return sampleMetadata(records=fullrecords)
 
     @property
@@ -51,13 +60,3 @@ class SampleMetadataMapper:
             msg = "CSV columns do not match expected format"
             raise RuntimeError(msg)
         return cols
-
-
-def _coerce_rec(rec: dict) -> sampleMetadataCSVrecord:
-    return sampleMetadataCSVrecord(
-        sample_id=rec["sample_id"],
-        lat=rec["lat"],
-        lon=rec["lon"],
-        sample_type=rec["sample_type"],
-        group_name=rec["group_name"],
-    )
