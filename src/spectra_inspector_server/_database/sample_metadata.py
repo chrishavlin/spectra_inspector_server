@@ -12,14 +12,17 @@ from spectra_inspector_server.model import sampleMetadata, sampleMetadataCSVreco
 
 
 class SampleMetadataMapper:
-    sample_metadata_fullpath: Path
+    sample_metadata_fullpath: Path | None
     exists: bool
     _df: pd.DataFrame | None = None
     expected_cols = ("sample_id", "lat", "lon")
 
     def __init__(self, sample_metadata_fullpath: Path):
         self.sample_metadata_fullpath = sample_metadata_fullpath
-        self.exists = sample_metadata_fullpath.is_file()
+        if sample_metadata_fullpath is None:
+            self.exists = False
+        else:
+            self.exists = sample_metadata_fullpath.is_file()
 
     @property
     def df(self) -> pd.DataFrame:
@@ -39,6 +42,9 @@ class SampleMetadataMapper:
         return None
 
     def get_all(self, availabe_samples: None | dict[str, str] = None) -> sampleMetadata:
+
+        if self.exists is False:
+            return sampleMetadata()
 
         df = self.df
         if availabe_samples is not None:

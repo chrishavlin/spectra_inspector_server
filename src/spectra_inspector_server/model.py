@@ -257,7 +257,7 @@ class sampleMetadataCSVrecord:
 
 @dataclass
 class sampleMetadata:
-    records: list[sampleMetadataCSVrecord]
+    records: list[sampleMetadataCSVrecord] | None = None
     map_samples: dict[str, str] | None = None
 
 
