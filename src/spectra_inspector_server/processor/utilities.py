@@ -85,3 +85,9 @@ def _make_serializeable_dict(md_dict: dict[str, Any]) -> dict[str, Any]:
         else:
             new_dict[k] = v
     return new_dict
+
+
+def _map_to_sample_name(map_name: str) -> str:
+    if "Map" not in map_name:
+        return map_name
+    return map_name.split("Map", maxsplit=1)[0].strip()

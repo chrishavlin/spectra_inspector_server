@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from spectra_inspector_server._database.sample_metadata import SampleMetadataMapper
 from spectra_inspector_server._logging import spectraLogger
 from spectra_inspector_server.model import EDAX_file_set
+from spectra_inspector_server.processor.utilities import _map_to_sample_name
 
 if TYPE_CHECKING:
     from spectra_inspector_server._file_tree_handling import EDAXPathHandler
@@ -56,12 +57,6 @@ class OnDiskDatabase:
             }
             self._available_samples = samples
         return self._available_samples
-
-
-def _map_to_sample_name(map_name: str) -> str:
-    if "Map" not in map_name:
-        return map_name
-    return map_name.split("Map", maxsplit=1)[0].strip()
 
 
 _expected_exts = [".spd", ".spc", ".ipr", ".bmp", ".xml"]

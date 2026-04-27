@@ -25,7 +25,7 @@ def test_spectrum1d() -> None:
 
 
 def test_sampleMetadataCSVrecord() -> None:
-    rec = {
+    rec: dict[str, str | float] = {
         "sample_id": "test id",
         "lat": 45.0,
         "lon": -23.0,

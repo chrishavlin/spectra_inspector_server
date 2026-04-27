@@ -5,6 +5,7 @@ import pytest
 
 from spectra_inspector_server._database.on_disk_db import _get_expected_files
 from spectra_inspector_server._file_tree_handling import EDAXPathHandler
+from spectra_inspector_server.processor.utilities import _map_to_sample_name
 
 if TYPE_CHECKING:
     from spectra_inspector_server.model import EDAX_file_set
@@ -13,7 +14,7 @@ import pandas as pd
 
 
 @pytest.fixture
-def on_disk_path(tmp_path) -> tuple[Path, list[str]]:
+def on_disk_path(tmp_path: Path) -> tuple[Path, list[str]]:
     # build a test db on disk: this could be a useful fixture
     db_root = tmp_path / "top_db"
     assert isinstance(db_root, Path)
@@ -21,7 +22,7 @@ def on_disk_path(tmp_path) -> tuple[Path, list[str]]:
 
     annoying_directory = "annoying second level with spaces"
 
-    sample_names = ["C-1", "C 2", "C 45 Map 1", "whatever you want"]
+    sample_names = ["C-1", "C-2", "C-45 Map 1", "whatever-you-want"]
     for sample in sample_names:
         sample_dir = db_root / sample
         sample_dir.mkdir()
@@ -39,7 +40,7 @@ def on_disk_path(tmp_path) -> tuple[Path, list[str]]:
                 fh.write(f"writing to {sample_file}")
 
     # add one more in an existing directory
-    new_samp = "lets make another sample"
+    new_samp = "lets-make-another-sample"
     sample_names.append(new_samp)
     spd_file = db_root / "C-1" / annoying_directory / (new_samp + ".spd")
     observed_sample_files: dict[str, Path] = _get_expected_files(spd_file)
@@ -50,7 +51,7 @@ def on_disk_path(tmp_path) -> tuple[Path, list[str]]:
     return db_root, sample_names
 
 
-def test_on_disk_db_init(on_disk_path) -> None:
+def test_on_disk_db_init(on_disk_path: tuple[Path, list[str]]) -> None:
 
     db_root, sample_names = on_disk_path
 
@@ -67,7 +68,7 @@ def test_on_disk_db_init(on_disk_path) -> None:
         assert sample_set.xml.exists()
 
 
-def test_map_to_sample_id(on_disk_path):
+def test_map_to_sample_id(on_disk_path: tuple[Path, list[str]]) -> None:
     db_root, sample_names = on_disk_path
 
     csv_fi = db_root / "sample_metadata.csv"
@@ -83,18 +84,21 @@ def test_map_to_sample_id(on_disk_path):
     assert ph.database.sample_metadata_fullpath.is_file()
 
     smd = ph.database.sample_metadata_mapper.get_all()
+    assert smd.records is not None
     assert len(smd.records) == len(sample_names)
     assert smd.map_samples is None
 
     availabe_samples = ph.database.available_samples
+
     smd = ph.database.sample_metadata_mapper.get_all(availabe_samples=availabe_samples)
+    assert smd.map_samples
     for sn in sample_names:
         assert sn in smd.map_samples
 
 
 def _fake_record(sample_name: str) -> dict[str, str | float]:
-    rec = {
-        "sample_name": sample_name,
+    rec: dict[str, str | float] = {
+        "sample_name": _map_to_sample_name(sample_name),
     }
 
     str_cols = [
@@ -104,7 +108,7 @@ def _fake_record(sample_name: str) -> dict[str, str | float]:
         "gps",
         "location_notes",
         "gps_quality_note",
-        "elvation_quality_note",
+        "elevation_quality_note",
         "processing_note",
         "lat_str",
         "lon_str",

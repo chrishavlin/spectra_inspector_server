@@ -17,7 +17,7 @@ class SampleMetadataMapper:
     _df: pd.DataFrame | None = None
     expected_cols = ("sample_id", "lat", "lon")
 
-    def __init__(self, sample_metadata_fullpath: Path):
+    def __init__(self, sample_metadata_fullpath: Path | None):
         self.sample_metadata_fullpath = sample_metadata_fullpath
         if sample_metadata_fullpath is None:
             self.exists = False
@@ -27,6 +27,7 @@ class SampleMetadataMapper:
     @property
     def df(self) -> pd.DataFrame:
         if self._df is None and self.exists:
+            assert self.sample_metadata_fullpath is not None
             self._df = pd.read_csv(self.sample_metadata_fullpath)
             self._df = self._df.rename(columns={"sample_name": "sample_id"})
         if self._df is None:
