@@ -233,8 +233,43 @@ class Info:
 
 
 @dataclass
+class sampleMetadataCSVrecord:
+    sample_id: str
+    lat: float
+    lon: float
+    elevation: float
+    group_name: str
+    sample_type: str
+    description: str
+
+    @staticmethod
+    def from_rec(rec: dict[str, str | float]) -> "sampleMetadataCSVrecord":
+        sid = str(rec["sample_id"])
+        sample_type = str(rec["sample_type"])
+        group_name = str(rec["group_name"])
+        description = str(rec["description"])
+
+        return sampleMetadataCSVrecord(
+            sample_id=sid,
+            lat=float(rec["lat"]),
+            lon=float(rec["lon"]),
+            sample_type=sample_type,
+            group_name=group_name,
+            description=description,
+            elevation=float(rec["elevation"]),
+        )
+
+
+@dataclass
+class sampleMetadata:
+    records: list[sampleMetadataCSVrecord] | None = None
+    map_samples: dict[str, str] | None = None
+
+
+@dataclass
 class AvailableDatasets:
     available_files: list[str]
+    sample_metadata: sampleMetadata | None = None
 
 
 class raveledImage(BaseModel):

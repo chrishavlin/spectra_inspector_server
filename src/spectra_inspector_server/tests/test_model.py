@@ -2,7 +2,7 @@ import dataclasses
 
 import numpy as np
 
-from spectra_inspector_server.model import Spectrum1d
+from spectra_inspector_server.model import Spectrum1d, sampleMetadataCSVrecord
 
 
 def test_spectrum1d() -> None:
@@ -22,3 +22,16 @@ def test_spectrum1d() -> None:
     assert "energy_max" in s1d_dict
 
     s1d.tolist()
+
+
+def test_sampleMetadataCSVrecord() -> None:
+    rec: dict[str, str | float] = {
+        "sample_id": "test id",
+        "lat": 45.0,
+        "lon": -23.0,
+        "elevation": 100,
+        "group_name": "group name",
+        "sample_type": "sample type",
+        "description": "desc",
+    }
+    sampleMetadataCSVrecord.from_rec(rec)
