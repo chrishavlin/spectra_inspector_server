@@ -88,9 +88,11 @@ def test_map_to_sample_id(on_disk_path: tuple[Path, list[str]]) -> None:
     assert len(smd.records) == len(sample_names)
     assert smd.map_samples is None
 
-    availabe_samples = ph.database.available_samples
+    available_samples = ph.database.available_samples
 
-    smd = ph.database.sample_metadata_mapper.get_all(availabe_samples=availabe_samples)
+    smd = ph.database.sample_metadata_mapper.get_all(
+        available_samples=available_samples
+    )
     assert smd.map_samples
     for sn in sample_names:
         assert sn in smd.map_samples

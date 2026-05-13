@@ -9,6 +9,7 @@ from spectra_inspector_server.model import (
     EDAX_axis,
     MetadataModel,
     Spectrum1d,
+    raveledImage,
 )
 from spectra_inspector_server.processor.utilities import _make_serializeable_dict
 
@@ -64,6 +65,24 @@ class OperationEDAXStateHandler:
         edax_ds = self.ph.load_edax(sample_name)
         return edax_ds.axes.copy()
 
+    def get_single_image(
+        self,
+        sample_name: str,
+        channel_index: int | tuple[int, int],
+        index0_range: tuple[int, int] | None = None,
+        index1_range: tuple[int, int] | None = None,
+    ) -> raveledImage:
+        im = self.get_image(
+            sample_name,
+            channel_index=channel_index,
+            index0_range=index0_range,
+            index1_range=index1_range,
+        )
+
+        shp = im.shape
+        im = im.ravel().tolist()
+        return raveledImage(image=im, shape=shp)
+
     def get_image(
         self,
         sample_name: str,
@@ -98,6 +117,28 @@ class OperationEDAXStateHandler:
             .astype(np.int64)
         )
         return im_subset
+
+    def get_raveled_multi_channel_intensity_image(
+        self,
+        sample_name: str,
+        channel_range: tuple[int, int],
+        index0_range: tuple[int, int] | None = None,
+        index1_range: tuple[int, int] | None = None,
+        chunking_index: int = 0,
+        chunksize: int = 32,
+    ) -> raveledImage:
+        result = self.get_multi_channel_intensity_image(
+            sample_name,
+            channel_range,
+            index0_range=index0_range,
+            index1_range=index1_range,
+            chunking_index=chunking_index,
+            chunksize=chunksize,
+        )
+        shp = result.shape
+        im = result.ravel().tolist()
+
+        return raveledImage(image=im, shape=shp)
 
     def get_multi_channel_intensity_image(
         self,

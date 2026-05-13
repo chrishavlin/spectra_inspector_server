@@ -1,6 +1,11 @@
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from typing import Annotated, Literal
+from uuid import uuid4
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 
 from spectra_inspector_server._file_tree_handling import EDAXPathHandler
 from spectra_inspector_server._logging import spectraLogger
@@ -11,13 +16,12 @@ from spectra_inspector_server.model import (
     CombinedMetadata,
     Info,
     MetadataModel,
+    Spectrum1d,
     Spectrum1dDict,
     raveledImage,
 )
 from spectra_inspector_server.processor.operations import OperationEDAXStateHandler
 from spectra_inspector_server.settings import Settings
-
-app = FastAPI()
 
 
 def _valid_sample_name(sample_name: str, ph: EDAXPathHandler) -> bool:
@@ -32,6 +36,61 @@ def _valid_sample_name(sample_name: str, ph: EDAXPathHandler) -> bool:
     return False
 
 
+_results = {}
+background_tasks = set()
+
+
+@dataclass
+class queueOpsItem:
+    ops_func: str
+    ops_id: str
+    ops_args: tuple | None = None
+    ops_kwargs: dict | None = None
+
+
+def process_handler(ph: EDAXPathHandler, item: queueOpsItem):
+    ops = OperationEDAXStateHandler(ph, allow_mock_files=pytest_running())
+    func = getattr(ops, item.ops_func)
+    result = None
+    if item.ops_args is None and item.ops_kwargs is None:
+        result = func()
+    elif item.ops_args is not None and item.ops_kwargs is not None:
+        result = func(*item.ops_args, **item.ops_kwargs)
+    elif item.ops_args is None and item.ops_kwargs is not None:
+        result = func(**item.ops_kwargs)
+    elif item.ops_args is not None and item.ops_kwargs is None:
+        result = func(*item.ops_args)
+    return result
+
+
+async def process_requests(q: asyncio.Queue, ph: EDAXPathHandler):
+    while True:
+        with ProcessPoolExecutor() as pool:
+            item = await q.get()  # Get a request from the queue
+            loop = asyncio.get_running_loop()
+            r = await loop.run_in_executor(pool, process_handler, ph, item)
+            _results[item.ops_id] = r
+            q.task_done()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    q = asyncio.Queue()
+    ph = get_database_session()
+
+    # start listening to ops requests
+    task = asyncio.create_task(process_requests(q, ph))
+    background_tasks.add(task)
+    task.add_done_callback(background_tasks.discard)
+
+    app.state.ph = ph
+    app.state.q = q
+    yield {"q": q, "ph": ph}
+
+
+app = FastAPI(lifespan=lifespan)
+
+
 @app.get("/info")
 async def info(settings: Annotated[Settings, Depends(get_settings)]) -> Info:
     return Info(
@@ -41,22 +100,25 @@ async def info(settings: Annotated[Settings, Depends(get_settings)]) -> Info:
 
 
 @app.get("/available-datasets")
-async def avaialbe_datasets() -> AvailableDatasets:
+async def available_datasets(request: Request) -> AvailableDatasets:
 
-    ph = get_database_session()
+    ph = request.app.state.ph
+    assert isinstance(ph, EDAXPathHandler)
     filekeys = [str(nm) for nm in ph.database.available_maps]
 
-    availabe_samples = ph.database.available_samples
+    available_samples = ph.database.available_samples
     all_meta = ph.database.sample_metadata_mapper.get_all(
-        availabe_samples=availabe_samples
+        available_samples=available_samples
     )
     return AvailableDatasets(available_files=filekeys, sample_metadata=all_meta)
 
 
 @app.get("/image-metadata")
-async def image_metadata(sample_name: str) -> MetadataModel:
+async def image_metadata(sample_name: str, request: Request) -> MetadataModel:
 
-    ph = get_database_session()
+    ph = request.app.state.ph
+    assert isinstance(ph, EDAXPathHandler)
+
     if not _valid_sample_name(sample_name, ph):
         msg = f"{sample_name} is not a valid sample"
         raise HTTPException(404, detail=msg)
@@ -65,10 +127,32 @@ async def image_metadata(sample_name: str) -> MetadataModel:
     return ops.get_refined_metadata(sample_name)
 
 
-@app.get("/image-metadata-combined")
-async def image_metadata_combined(sample_name: str) -> CombinedMetadata:
+async def await_op_result(item: queueOpsItem):
+    total_time = 0
+    dt = 0.01
+    timeout = 60 * 2
+    while True:
+        if item.ops_id not in _results:
+            await asyncio.sleep(dt)
+            total_time += dt
+        elif total_time > timeout:
+            msg = f"timeout error after {total_time} s"
+            raise TimeoutError(msg)
+        else:
+            break
+    result = _results.pop(item.ops_id)
+    assert item.ops_id not in _results
+    return result
 
-    ph = get_database_session()
+
+@app.get("/image-metadata-combined")
+async def image_metadata_combined(
+    sample_name: str, request: Request
+) -> CombinedMetadata:
+
+    ph = request.app.state.ph
+    assert isinstance(ph, EDAXPathHandler)
+
     if not _valid_sample_name(sample_name, ph):
         msg = f"{sample_name} is not a valid sample"
         raise HTTPException(404, detail=msg)
@@ -80,6 +164,7 @@ async def image_metadata_combined(sample_name: str) -> CombinedMetadata:
 @app.get("/image-spectrum")
 async def image_spectrum(
     sample_name: str,
+    request: Request,
     channel_0: int | None = None,
     channel_1: int | None = None,
     index0_0: int | None | Literal["none"] = None,
@@ -88,12 +173,14 @@ async def image_spectrum(
     index1_1: int | None | Literal["none"] = None,
 ) -> Spectrum1dDict:
 
-    ph = get_database_session()
+    ph = request.app.state.ph
+    assert isinstance(ph, EDAXPathHandler)
     if not _valid_sample_name(sample_name, ph):
         msg = f"{sample_name} is not a valid sample"
         raise HTTPException(404, detail=msg)
 
-    ops = OperationEDAXStateHandler(ph, allow_mock_files=pytest_running())
+    q = request.app.state.q
+    assert isinstance(q, asyncio.Queue)
 
     index0_range: None | tuple[int, int]
     if isinstance(index0_0, int) and isinstance(index0_1, int):
@@ -113,12 +200,25 @@ async def image_spectrum(
     else:
         channel_range = None
 
-    result = ops.get_spectrum(
-        sample_name,
-        channel_range=channel_range,
-        index0_range=index0_range,
-        index1_range=index1_range,
+    item = queueOpsItem(
+        ops_func="get_spectrum",
+        ops_id=uuid4().hex,
+        ops_args=(sample_name,),
+        ops_kwargs={
+            "channel_range": channel_range,
+            "index0_range": index0_range,
+            "index1_range": index1_range,
+        },
     )
+
+    await q.put(item)
+    try:
+        result = await await_op_result(item)
+    except TimeoutError as err:
+        msg = "Timeout error during spectrum calculation"
+        raise HTTPException(404, detail=msg) from err
+
+    assert isinstance(result, Spectrum1d)
     return result.todict()
 
 
@@ -126,17 +226,19 @@ async def image_spectrum(
 async def image_data(
     sample_name: str,
     channel_index: int,
+    request: Request,
     index0_0: int | None | Literal["none"] = None,
     index0_1: int | None | Literal["none"] = None,
     index1_0: int | None | Literal["none"] = None,
     index1_1: int | None | Literal["none"] = None,
 ) -> raveledImage:
-    ph = get_database_session()
+
+    ph = request.app.state.ph
+    assert isinstance(ph, EDAXPathHandler)
+
     if not _valid_sample_name(sample_name, ph):
         msg = f"{sample_name} is not a valid sample"
         raise HTTPException(404, detail=msg)
-
-    ops = OperationEDAXStateHandler(ph, allow_mock_files=pytest_running())
 
     index0_range: None | tuple[int, int]
     if isinstance(index0_0, int) and isinstance(index0_1, int):
@@ -150,13 +252,26 @@ async def image_data(
     else:
         index1_range = None
 
-    result = ops.get_image(
-        sample_name, channel_index, index0_range=index0_range, index1_range=index1_range
+    item = queueOpsItem(
+        ops_func="get_single_image",
+        ops_id=uuid4().hex,
+        ops_args=(sample_name,),
+        ops_kwargs={
+            "channel_index": channel_index,
+            "index0_range": index0_range,
+            "index1_range": index1_range,
+        },
     )
-    shp = result.shape
-    im = result.ravel().tolist()
 
-    return raveledImage(image=im, shape=shp)
+    await request.app.state.q.put(item)
+    try:
+        result = await await_op_result(item)
+    except TimeoutError as err:
+        msg = "Timeout error during get_single_image call"
+        raise HTTPException(404, detail=msg) from err
+
+    assert isinstance(result, raveledImage)
+    return result
 
 
 @app.get("/image-data-summed")
@@ -164,17 +279,18 @@ async def image_data_summed(
     sample_name: str,
     channel_0: int,
     channel_1: int,
+    request: Request,
     index0_0: int | None | Literal["none"] = None,
     index0_1: int | None | Literal["none"] = None,
     index1_0: int | None | Literal["none"] = None,
     index1_1: int | None | Literal["none"] = None,
 ) -> raveledImage:
-    ph = get_database_session()
+
+    ph = request.app.state.ph
+    assert isinstance(ph, EDAXPathHandler)
     if not _valid_sample_name(sample_name, ph):
         msg = f"{sample_name} is not a valid sample"
         raise HTTPException(404, detail=msg)
-
-    ops = OperationEDAXStateHandler(ph, allow_mock_files=pytest_running())
 
     index0_range: None | tuple[int, int]
     if isinstance(index0_0, int) and isinstance(index0_1, int):
@@ -192,11 +308,23 @@ async def image_data_summed(
     msg = f"fetching summed channel intensity for {sample_name} with {channel_range=}, {index0_range=}, {index1_range=}"
     spectraLogger.info(msg)
 
-    result = ops.get_multi_channel_intensity_image(
-        sample_name, channel_range, index0_range=index0_range, index1_range=index1_range
+    item = queueOpsItem(
+        ops_func="get_raveled_multi_channel_intensity_image",
+        ops_id=uuid4().hex,
+        ops_args=(sample_name,),
+        ops_kwargs={
+            "channel_range": channel_range,
+            "index0_range": index0_range,
+            "index1_range": index1_range,
+        },
     )
 
-    shp = result.shape
-    im = result.ravel().tolist()
+    await request.app.state.q.put(item)
+    try:
+        result = await await_op_result(item)
+    except TimeoutError as err:
+        msg = "Timeout error during get_raveled_multi_channel_intensity_image call"
+        raise HTTPException(404, detail=msg) from err
 
-    return raveledImage(image=im, shape=shp)
+    assert isinstance(result, raveledImage)
+    return result
