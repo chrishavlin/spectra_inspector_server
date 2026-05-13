@@ -102,8 +102,7 @@ async def info(settings: Annotated[Settings, Depends(get_settings)]) -> Info:
 @app.get("/available-datasets")
 async def available_datasets(request: Request) -> AvailableDatasets:
 
-    ph = request.app.state.ph
-    assert isinstance(ph, EDAXPathHandler)
+    ph = ph_from_app_state(request)
     filekeys = [str(nm) for nm in ph.database.available_maps]
 
     available_samples = ph.database.available_samples
@@ -116,8 +115,7 @@ async def available_datasets(request: Request) -> AvailableDatasets:
 @app.get("/image-metadata")
 async def image_metadata(sample_name: str, request: Request) -> MetadataModel:
 
-    ph = request.app.state.ph
-    assert isinstance(ph, EDAXPathHandler)
+    ph = ph_from_app_state(request)
 
     if not _valid_sample_name(sample_name, ph):
         msg = f"{sample_name} is not a valid sample"
@@ -150,8 +148,7 @@ async def image_metadata_combined(
     sample_name: str, request: Request
 ) -> CombinedMetadata:
 
-    ph = request.app.state.ph
-    assert isinstance(ph, EDAXPathHandler)
+    ph = ph_from_app_state(request)
 
     if not _valid_sample_name(sample_name, ph):
         msg = f"{sample_name} is not a valid sample"
@@ -173,8 +170,7 @@ async def image_spectrum(
     index1_1: int | None | Literal["none"] = None,
 ) -> Spectrum1dDict:
 
-    ph = request.app.state.ph
-    assert isinstance(ph, EDAXPathHandler)
+    ph = ph_from_app_state(request)
     if not _valid_sample_name(sample_name, ph):
         msg = f"{sample_name} is not a valid sample"
         raise HTTPException(404, detail=msg)
@@ -233,8 +229,7 @@ async def image_data(
     index1_1: int | None | Literal["none"] = None,
 ) -> raveledImage:
 
-    ph = request.app.state.ph
-    assert isinstance(ph, EDAXPathHandler)
+    ph = ph_from_app_state(request)
 
     if not _valid_sample_name(sample_name, ph):
         msg = f"{sample_name} is not a valid sample"
@@ -274,6 +269,14 @@ async def image_data(
     return result
 
 
+def ph_from_app_state(request: Request):
+    if hasattr(request.app.state, "ph"):
+        ph = request.app.state.ph
+        assert isinstance(ph, EDAXPathHandler)
+        return ph
+    return get_database_session()
+
+
 @app.get("/image-data-summed")
 async def image_data_summed(
     sample_name: str,
@@ -286,8 +289,7 @@ async def image_data_summed(
     index1_1: int | None | Literal["none"] = None,
 ) -> raveledImage:
 
-    ph = request.app.state.ph
-    assert isinstance(ph, EDAXPathHandler)
+    ph = ph_from_app_state(request)
     if not _valid_sample_name(sample_name, ph):
         msg = f"{sample_name} is not a valid sample"
         raise HTTPException(404, detail=msg)
