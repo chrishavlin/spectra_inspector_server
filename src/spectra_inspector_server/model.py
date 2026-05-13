@@ -235,28 +235,41 @@ class Info:
 @dataclass
 class sampleMetadataCSVrecord:
     sample_id: str
-    lat: float
-    lon: float
-    elevation: float
+    lat: float | None
+    lon: float | None
+    elevation: float | None
     group_name: str
     sample_type: str
     description: str
 
     @staticmethod
     def from_rec(rec: dict[str, str | float]) -> "sampleMetadataCSVrecord":
+
         sid = str(rec["sample_id"])
         sample_type = str(rec["sample_type"])
         group_name = str(rec["group_name"])
         description = str(rec["description"])
 
+        elevation = None
+        if rec["elevation"]:
+            elevation = float(rec["elevation"])
+
+        lat = None
+        if rec["lat"]:
+            lat = float(rec["lat"])
+
+        lon = None
+        if rec["lon"]:
+            lon = float(rec["lon"])
+
         return sampleMetadataCSVrecord(
             sample_id=sid,
-            lat=float(rec["lat"]),
-            lon=float(rec["lon"]),
+            lat=lat,
+            lon=lon,
             sample_type=sample_type,
             group_name=group_name,
             description=description,
-            elevation=float(rec["elevation"]),
+            elevation=elevation,
         )
 
 
