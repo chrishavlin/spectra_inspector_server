@@ -1,3 +1,5 @@
+from collections.abc import Generator
+
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -11,18 +13,23 @@ from spectra_inspector_server.model import (
     raveledImage,
 )
 
-client = TestClient(app)
-
 _endpoints_keys = [
     ("info", ["app_name", "spectra_inspector_data_root"]),
     ("available-datasets", ["available_files"]),
 ]
 
 
-@pytest.mark.parametrize(("endpoint", "response_keys"), _endpoints_keys)
-def test_endpoint_responses(endpoint: str, response_keys: list[str] | None) -> None:
+@pytest.fixture
+def app_client() -> Generator[TestClient, None, None]:
+    with TestClient(app) as client:
+        yield client
 
-    response = client.get(f"/{endpoint}")
+
+@pytest.mark.parametrize(("endpoint", "response_keys"), _endpoints_keys)
+def test_endpoint_responses(
+    endpoint: str, response_keys: list[str] | None, app_client: TestClient
+) -> None:
+    response = app_client.get(f"/{endpoint}")
     assert response.status_code == 200
 
     if response_keys:
@@ -30,8 +37,8 @@ def test_endpoint_responses(endpoint: str, response_keys: list[str] | None) -> N
         all(ky in jdict for ky in response_keys)
 
 
-def test_image_metadata() -> None:
-    response = client.get(
+def test_image_metadata(app_client: TestClient) -> None:
+    response = app_client.get(
         "/image-metadata", params={"sample_name": _on_disc_mock.filenames[0]}
     )
     assert response.status_code == 200
@@ -39,8 +46,9 @@ def test_image_metadata() -> None:
     assert mm.General.title == "EDS Spectrum Image"
 
 
-def test_image_combined_metadata() -> None:
-    response = client.get(
+def test_image_combined_metadata(app_client: TestClient) -> None:
+
+    response = app_client.get(
         "/image-metadata-combined", params={"sample_name": _on_disc_mock.filenames[0]}
     )
     assert response.status_code == 200
@@ -53,9 +61,8 @@ def test_image_combined_metadata() -> None:
         assert mm.axes_by_index[indx].size == mm.data_shape[indx]
 
 
-def test_image_spectrum() -> None:
-
-    response = client.get(
+def test_image_spectrum(app_client: TestClient) -> None:
+    response = app_client.get(
         "/image-spectrum", params={"sample_name": _on_disc_mock.filenames[0]}
     )
     assert response.status_code == 200
@@ -64,8 +71,8 @@ def test_image_spectrum() -> None:
     assert np.all(np.isreal(spectrum.intensity))
 
 
-def test_image_data() -> None:
-    response = client.get(
+def test_image_data(app_client: TestClient) -> None:
+    response = app_client.get(
         "/image-data",
         params={"sample_name": _on_disc_mock.filenames[0], "channel_index": 2},
     )
@@ -77,8 +84,9 @@ def test_image_data() -> None:
     assert np.all(np.isreal(spectrum.shape))
 
 
-def test_image_data_subset() -> None:
-    response = client.get(
+def test_image_data_subset(app_client: TestClient) -> None:
+
+    response = app_client.get(
         "/image-data",
         params={
             "sample_name": _on_disc_mock.filenames[0],
@@ -99,8 +107,8 @@ def test_image_data_subset() -> None:
     assert spectrum.shape == (3, 5)
 
 
-def test_image_data_summed() -> None:
-    response = client.get(
+def test_image_data_summed(app_client: TestClient) -> None:
+    response = app_client.get(
         "/image-data-summed",
         params={
             "sample_name": _on_disc_mock.filenames[0],
@@ -116,8 +124,8 @@ def test_image_data_summed() -> None:
     assert np.all(np.isreal(spectrum.shape))
 
 
-def test_image_data_summed_subset() -> None:
-    response = client.get(
+def test_image_data_summed_subset(app_client: TestClient) -> None:
+    response = app_client.get(
         "/image-data-summed",
         params={
             "sample_name": _on_disc_mock.filenames[0],

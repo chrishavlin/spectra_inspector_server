@@ -42,15 +42,17 @@ class SampleMetadataMapper:
             return sampleMetadataCSVrecord.from_rec(rec)
         return None
 
-    def get_all(self, availabe_samples: None | dict[str, str] = None) -> sampleMetadata:
+    def get_all(
+        self, available_samples: None | dict[str, str] = None
+    ) -> sampleMetadata:
 
         if self.exists is False:
             return sampleMetadata()
 
         df = self.df
-        if availabe_samples is not None:
+        if available_samples is not None:
             recs = [
-                {"map_id": m, "sample_id": sid} for m, sid in availabe_samples.items()
+                {"map_id": m, "sample_id": sid} for m, sid in available_samples.items()
             ]
             df_available = pd.DataFrame(recs)
             df = pd.merge(df_available, df, on="sample_id", how="left")
@@ -60,7 +62,7 @@ class SampleMetadataMapper:
         recs = json.loads(df.to_json(orient="records"))
 
         fullrecords = [sampleMetadataCSVrecord.from_rec(rec) for rec in recs]
-        return sampleMetadata(records=fullrecords, map_samples=availabe_samples)
+        return sampleMetadata(records=fullrecords, map_samples=available_samples)
 
     @property
     def columns(self) -> list[str]:
