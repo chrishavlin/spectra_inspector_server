@@ -1,3 +1,5 @@
+from collections.abc import Generator
+
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -18,7 +20,7 @@ _endpoints_keys = [
 
 
 @pytest.fixture
-def app_client():
+def app_client() -> Generator[TestClient, None, None]:
     with TestClient(app) as client:
         yield client
 
@@ -35,7 +37,7 @@ def test_endpoint_responses(
         all(ky in jdict for ky in response_keys)
 
 
-def test_image_metadata(app_client) -> None:
+def test_image_metadata(app_client: TestClient) -> None:
     response = app_client.get(
         "/image-metadata", params={"sample_name": _on_disc_mock.filenames[0]}
     )
@@ -44,7 +46,7 @@ def test_image_metadata(app_client) -> None:
     assert mm.General.title == "EDS Spectrum Image"
 
 
-def test_image_combined_metadata(app_client) -> None:
+def test_image_combined_metadata(app_client: TestClient) -> None:
 
     response = app_client.get(
         "/image-metadata-combined", params={"sample_name": _on_disc_mock.filenames[0]}
@@ -59,7 +61,7 @@ def test_image_combined_metadata(app_client) -> None:
         assert mm.axes_by_index[indx].size == mm.data_shape[indx]
 
 
-def test_image_spectrum(app_client) -> None:
+def test_image_spectrum(app_client: TestClient) -> None:
     response = app_client.get(
         "/image-spectrum", params={"sample_name": _on_disc_mock.filenames[0]}
     )
@@ -69,7 +71,7 @@ def test_image_spectrum(app_client) -> None:
     assert np.all(np.isreal(spectrum.intensity))
 
 
-def test_image_data(app_client) -> None:
+def test_image_data(app_client: TestClient) -> None:
     response = app_client.get(
         "/image-data",
         params={"sample_name": _on_disc_mock.filenames[0], "channel_index": 2},
@@ -82,7 +84,7 @@ def test_image_data(app_client) -> None:
     assert np.all(np.isreal(spectrum.shape))
 
 
-def test_image_data_subset(app_client) -> None:
+def test_image_data_subset(app_client: TestClient) -> None:
 
     response = app_client.get(
         "/image-data",
@@ -105,7 +107,7 @@ def test_image_data_subset(app_client) -> None:
     assert spectrum.shape == (3, 5)
 
 
-def test_image_data_summed(app_client) -> None:
+def test_image_data_summed(app_client: TestClient) -> None:
     response = app_client.get(
         "/image-data-summed",
         params={
@@ -122,7 +124,7 @@ def test_image_data_summed(app_client) -> None:
     assert np.all(np.isreal(spectrum.shape))
 
 
-def test_image_data_summed_subset(app_client) -> None:
+def test_image_data_summed_subset(app_client: TestClient) -> None:
     response = app_client.get(
         "/image-data-summed",
         params={

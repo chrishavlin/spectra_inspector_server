@@ -1,4 +1,6 @@
 import asyncio
+from asyncio.tasks import Task
+from collections.abc import AsyncGenerator
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -10,6 +12,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from spectra_inspector_server._file_tree_handling import EDAXPathHandler
 from spectra_inspector_server._logging import spectraLogger
 from spectra_inspector_server._testing import pytest_running
+from spectra_inspector_server._typing import OpsReturnType
 from spectra_inspector_server.dependencies import get_database_session, get_settings
 from spectra_inspector_server.model import (
     AvailableDatasets,
@@ -36,19 +39,19 @@ def _valid_sample_name(sample_name: str, ph: EDAXPathHandler) -> bool:
     return False
 
 
-_results = {}
-background_tasks = set()
+_results: dict[str, OpsReturnType | None] = {}
+background_tasks: set[Task] = set()  # type:ignore[type-arg]
 
 
 @dataclass
 class queueOpsItem:
     ops_func: str
     ops_id: str
-    ops_args: tuple | None = None
-    ops_kwargs: dict | None = None
+    ops_args: tuple[str] | None | tuple[int, int] | int | str = None
+    ops_kwargs: dict[str, None | tuple[int, int] | int | str | tuple[str]] | None = None
 
 
-def process_handler(ph: EDAXPathHandler, item: queueOpsItem):
+def process_handler(ph: EDAXPathHandler, item: queueOpsItem) -> OpsReturnType | None:
     ops = OperationEDAXStateHandler(ph, allow_mock_files=pytest_running())
     func = getattr(ops, item.ops_func)
     result = None
@@ -63,7 +66,7 @@ def process_handler(ph: EDAXPathHandler, item: queueOpsItem):
     return result
 
 
-async def process_requests(q: asyncio.Queue, ph: EDAXPathHandler):
+async def process_requests(q: asyncio.Queue, ph: EDAXPathHandler) -> None:  # type:ignore[type-arg]
     while True:
         with ProcessPoolExecutor() as pool:
             item = await q.get()  # Get a request from the queue
@@ -74,12 +77,15 @@ async def process_requests(q: asyncio.Queue, ph: EDAXPathHandler):
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    q = asyncio.Queue()
+async def lifespan(
+    app: FastAPI,
+) -> AsyncGenerator[dict[str, EDAXPathHandler | asyncio.Queue]]:  # type:ignore[type-arg]
+    q = asyncio.Queue()  # type: ignore[var-annotated]
     ph = get_database_session()
 
     # start listening to ops requests
     task = asyncio.create_task(process_requests(q, ph))
+
     background_tasks.add(task)
     task.add_done_callback(background_tasks.discard)
 
@@ -125,8 +131,8 @@ async def image_metadata(sample_name: str, request: Request) -> MetadataModel:
     return ops.get_refined_metadata(sample_name)
 
 
-async def await_op_result(item: queueOpsItem):
-    total_time = 0
+async def await_op_result(item: queueOpsItem) -> OpsReturnType | None:
+    total_time = 0.0
     dt = 0.01
     timeout = 60 * 2
     while True:
@@ -208,6 +214,7 @@ async def image_spectrum(
     )
 
     await q.put(item)
+    result = None
     try:
         result = await await_op_result(item)
     except TimeoutError as err:
@@ -215,7 +222,7 @@ async def image_spectrum(
         raise HTTPException(404, detail=msg) from err
 
     assert isinstance(result, Spectrum1d)
-    return result.todict()
+    return result.todict()  # type:ignore[unreachable]
 
 
 @app.get("/image-data")
@@ -269,7 +276,7 @@ async def image_data(
     return result
 
 
-def ph_from_app_state(request: Request):
+def ph_from_app_state(request: Request) -> EDAXPathHandler:
     if hasattr(request.app.state, "ph"):
         ph = request.app.state.ph
         assert isinstance(ph, EDAXPathHandler)
