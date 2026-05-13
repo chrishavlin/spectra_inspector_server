@@ -1,6 +1,5 @@
 import asyncio
 from asyncio.tasks import Task
-from collections.abc import AsyncGenerator
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -12,7 +11,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from spectra_inspector_server._file_tree_handling import EDAXPathHandler
 from spectra_inspector_server._logging import spectraLogger
 from spectra_inspector_server._testing import pytest_running
-from spectra_inspector_server._typing import OpsReturnType
+from spectra_inspector_server._typing import LifespanGenerator, OptionalOpsReturnType
 from spectra_inspector_server.dependencies import get_database_session, get_settings
 from spectra_inspector_server.model import (
     AvailableDatasets,
@@ -39,7 +38,7 @@ def _valid_sample_name(sample_name: str, ph: EDAXPathHandler) -> bool:
     return False
 
 
-_results: dict[str, OpsReturnType | None] = {}
+_results: dict[str, OptionalOpsReturnType] = {}
 background_tasks: set[Task] = set()  # type:ignore[type-arg]
 
 
@@ -51,7 +50,7 @@ class queueOpsItem:
     ops_kwargs: dict[str, None | tuple[int, int] | int | str | tuple[str]] | None = None
 
 
-def process_handler(ph: EDAXPathHandler, item: queueOpsItem) -> OpsReturnType | None:
+def process_handler(ph: EDAXPathHandler, item: queueOpsItem) -> OptionalOpsReturnType:
     ops = OperationEDAXStateHandler(ph, allow_mock_files=pytest_running())
     func = getattr(ops, item.ops_func)
     result = None
@@ -79,7 +78,7 @@ async def process_requests(q: asyncio.Queue, ph: EDAXPathHandler) -> None:  # ty
 @asynccontextmanager
 async def lifespan(
     app: FastAPI,
-) -> AsyncGenerator[dict[str, EDAXPathHandler | asyncio.Queue]]:  # type:ignore[type-arg]
+) -> LifespanGenerator:
     q = asyncio.Queue()  # type: ignore[var-annotated]
     ph = get_database_session()
 
@@ -131,7 +130,7 @@ async def image_metadata(sample_name: str, request: Request) -> MetadataModel:
     return ops.get_refined_metadata(sample_name)
 
 
-async def await_op_result(item: queueOpsItem) -> OpsReturnType | None:
+async def await_op_result(item: queueOpsItem) -> OptionalOpsReturnType:
     total_time = 0.0
     dt = 0.01
     timeout = 60 * 2
