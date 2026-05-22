@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12"]
+        python-version: ["3.13"]
         runs-on: [ubuntu-latest]
 
     steps:
@@ -44,5 +44,5 @@ jobs:
       - name: uv sync
         run: uv sync --group typing
 
-      - name: Run mypy
-        run: uv run mypy src/*
+      - name: Run ty check
+        run: uv run ty check src

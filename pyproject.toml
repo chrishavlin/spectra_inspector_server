@@ -60,8 +60,10 @@ docs = [
   "sphinx_autodoc_typehints",
   "furo>=2023.08.17",
 ]
-typing = ["mypy", "pandas-stubs"]
-
+typing = [
+ "pandas-stubs>=2.3.3.260113",
+ "ty>=0.0.37",
+]
 
 [tool.hatch]
 version.source = "vcs"
@@ -74,6 +76,8 @@ dependency-groups = ["dev"]
 dependency-groups = ["test"]
 env-vars.PYTHONWARNDEFAULTENCODING = "1"
 
+[tool.ty.analysis]
+respect-type-ignore-comments = true
 
 [tool.pytest]
 minversion = "9.0"
@@ -83,29 +87,9 @@ filterwarnings = ["error"]
 log_level = "INFO"
 testpaths = ["tests", "src/spectra_inspector_server"]
 
-
 [tool.coverage]
 run.source = ["spectra_inspector_server"]
 report.exclude_also = ['\.\.\.', 'if typing.TYPE_CHECKING:']
-
-[tool.mypy]
-plugins = ["pydantic.mypy"]
-files = ["src", "tests"]
-python_version = "3.10"
-warn_unused_configs = true
-strict = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
-warn_unreachable = true
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
-follow_untyped_imports = true
-
-
-[[tool.mypy.overrides]]
-module = "spectra_inspector_server.*"
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-
 
 [tool.ruff]
 
