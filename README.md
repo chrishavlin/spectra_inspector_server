@@ -76,8 +76,15 @@ name and if not found, will default to `./`.
 
 ```
 uv sync --group typing
-mypy --follow-untyped-imports .
+uv run ty check
 ```
+
+### Deployment
+
+```
+docker compose up
+```
+
 
 <!-- SPHINX-START -->
 
