@@ -40,6 +40,5 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: /Users/chavlin/data/extractacomp_/TorresSamplesFromBox
+      device: ${SPECTRA_INSPECTOR_HOST_DATA_ROOT}
       o: bind
-

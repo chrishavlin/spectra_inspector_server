@@ -81,10 +81,19 @@ uv run ty check
 
 ### Deployment
 
+To build and run (and load env vars from `.env`)
+
 ```
-docker compose up
+$ ./compose_build_and_up.sh
 ```
 
+Env vars:
+
+- `SPECTRA_INSPECTOR_DATA_ROOT`: path to data used by fastapi server. If running
+  in docker, this should point to the mounted volume path, not the host data
+  path.
+- `SPECTRA_INSPECTOR_HOST_DATA_ROOT`: path to data on host machine, used by
+  docker compose to bind mount a directory.
 
 <!-- SPHINX-START -->
 
