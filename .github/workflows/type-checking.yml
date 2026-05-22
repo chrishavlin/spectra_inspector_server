@@ -44,5 +44,5 @@ jobs:
       - name: uv sync
         run: uv sync --group typing
 
-      - name: Run mypy
-        run: uv run mypy src/*
+      - name: Run ty check
+        run: uv run ty check src

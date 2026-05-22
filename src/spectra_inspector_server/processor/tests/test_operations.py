@@ -64,7 +64,7 @@ def test_get_multi_channel_image(edax_path_handler: EDAXPathHandler) -> None:
     assert im.shape == expected_shp
 
     with pytest.raises(TypeError, match="unexpected type for channel_index"):
-        _ = ops.get_image(fake_filename, [0, 4])  # type:ignore[arg-type]
+        _ = ops.get_image(fake_filename, (0, 4))
 
 
 def test_get_refined_metadata(edax_path_handler: EDAXPathHandler) -> None:
