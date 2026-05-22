@@ -76,6 +76,8 @@ dependency-groups = ["dev"]
 dependency-groups = ["test"]
 env-vars.PYTHONWARNDEFAULTENCODING = "1"
 
+[tool.ty.analysis]
+respect-type-ignore-comments = true
 
 [tool.pytest]
 minversion = "9.0"
