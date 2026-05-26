@@ -76,7 +76,30 @@ name and if not found, will default to `./`.
 
 ```
 uv sync --group typing
-mypy --follow-untyped-imports .
+uv run ty check
+```
+
+### Deployment
+
+To build and run (and load env vars from `.env`)
+
+```
+$ ./compose_build_and_up.sh
+```
+
+Env vars:
+
+- `SPECTRA_INSPECTOR_DATA_ROOT`: path to data used by fastapi server. If running
+  in docker, this should point to the mounted volume path, not the host data
+  path. If running outside of docker, this should point to the host data path.
+- `SPECTRA_INSPECTOR_HOST_DATA_ROOT`: path to data on host machine, used by
+  docker compose to bind mount a directory. Only used by docker.
+
+So an example `.env` for deployment might look like:
+
+```
+SPECTRA_INSPECTOR_DATA_ROOT='/TorresSamplesFromBox'
+SPECTRA_INSPECTOR_HOST_DATA_ROOT='/path/to/host/TorresSamplesFromBox'
 ```
 
 <!-- SPHINX-START -->
