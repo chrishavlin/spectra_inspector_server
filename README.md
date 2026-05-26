@@ -95,6 +95,13 @@ Env vars:
 - `SPECTRA_INSPECTOR_HOST_DATA_ROOT`: path to data on host machine, used by
   docker compose to bind mount a directory.
 
+So an example `.env` for deployment might look like:
+
+```
+SPECTRA_INSPECTOR_DATA_ROOT='/TorresSamplesFromBox'
+SPECTRA_INSPECTOR_HOST_DATA_ROOT='/path/to/host/TorresSamplesFromBox'
+```
+
 <!-- SPHINX-START -->
 
 <!-- prettier-ignore-start -->
