@@ -91,9 +91,9 @@ Env vars:
 
 - `SPECTRA_INSPECTOR_DATA_ROOT`: path to data used by fastapi server. If running
   in docker, this should point to the mounted volume path, not the host data
-  path.
+  path. If running outside of docker, this should point to the host data path.
 - `SPECTRA_INSPECTOR_HOST_DATA_ROOT`: path to data on host machine, used by
-  docker compose to bind mount a directory.
+  docker compose to bind mount a directory. Only used by docker.
 
 So an example `.env` for deployment might look like:
 

@@ -16,7 +16,7 @@ services:
     user: root
 
     volumes:
-      - TorresSamplesFromBox:/TorresSamplesFromBox
+      - TorresSamplesFromBox:${SPECTRA_INSPECTOR_DATA_ROOT}
 
     develop:
       # Create a `watch` configuration to update the app
