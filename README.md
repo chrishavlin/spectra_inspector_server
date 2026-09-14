@@ -1,3 +1,8 @@
+# not maintained
+
+Moved to a mono-repo layout in [`spectra_inspector`](https://github.com/chrishavlin/spectra_inspector) 
+to simplify deployment, this repository is not maintained. 
+
 # spectra_inspector_server
 
 The `spectra_inspector_server` is the backend FastAPI server for the
